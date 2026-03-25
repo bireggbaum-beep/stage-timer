@@ -44,7 +44,8 @@ export default function Timer() {
   const [fullscreenAvailable, setFullscreenAvailable] = useState(true);
   const [pauseDuration, setPauseDuration] = useState(0);
   const [tickingEnabled, setTickingEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('tickingEnabled') === 'true';
+    const stored = localStorage.getItem('tickingEnabled');
+    return stored === null ? true : stored === 'true';
   });
   const timelineRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<any>(null);

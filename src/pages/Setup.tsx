@@ -16,7 +16,8 @@ export default function Setup() {
   const [, setLocation] = useLocation();
   const [plannedEndTimeInput, setPlannedEndTimeInput] = useState<string>('');
   const [tickingEnabled, setTickingEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('tickingEnabled') === 'true';
+    const stored = localStorage.getItem('tickingEnabled');
+    return stored === null ? true : stored === 'true';
   });
 
   const toggleTicking = () => {
