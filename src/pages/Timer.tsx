@@ -11,6 +11,8 @@ import {
   Settings,
   Maximize,
   List,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -41,9 +43,41 @@ export default function Timer() {
   const [showSegmentList, setShowSegmentList] = useState(true);
   const [fullscreenAvailable, setFullscreenAvailable] = useState(true);
   const [pauseDuration, setPauseDuration] = useState(0);
+  const [tickingEnabled, setTickingEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('tickingEnabled') === 'true';
+  });
   const timelineRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<any>(null);
   const pauseStartTimeRef = useRef<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const toggleTicking = () => {
+    const next = !tickingEnabled;
+    setTickingEnabled(next);
+    localStorage.setItem('tickingEnabled', String(next));
+  };
+
+  // Create audio element once on mount
+  useEffect(() => {
+    const audio = new Audio(`${import.meta.env.BASE_URL}ticking.m4a`);
+    audio.loop = true;
+    audioRef.current = audio;
+    return () => {
+      audio.pause();
+      audioRef.current = null;
+    };
+  }, []);
+
+  // Play/pause audio in sync with timer state
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (tickingEnabled && state.isRunning && !state.isPaused && !state.sessionCompleted) {
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  }, [tickingEnabled, state.isRunning, state.isPaused, state.sessionCompleted]);
 
   // Update current time every second
   useEffect(() => {
@@ -538,6 +572,15 @@ export default function Timer() {
 
           <Button onClick={toggleClock} size="lg" variant="outline" title={t('timer.tooltipClock')}>
             <Clock className="h-5 w-5" />
+          </Button>
+
+          <Button
+            onClick={toggleTicking}
+            size="lg"
+            variant={tickingEnabled ? 'default' : 'outline'}
+            title={t('timer.tooltipTicking')}
+          >
+            {tickingEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
           </Button>
 
           <Button onClick={() => setShowSegmentList(!showSegmentList)} size="lg" variant="outline" title={t('timer.tooltipList')}>

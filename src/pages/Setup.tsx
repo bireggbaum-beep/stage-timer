@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { Trash2, Plus, Play } from 'lucide-react';
+import { Trash2, Plus, Play, Volume2, VolumeX } from 'lucide-react';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Segment, SegmentMode } from '@/types/timer';
@@ -15,6 +15,15 @@ export default function Setup() {
   const { t, language, setLanguage } = useLanguage();
   const [, setLocation] = useLocation();
   const [plannedEndTimeInput, setPlannedEndTimeInput] = useState<string>('');
+  const [tickingEnabled, setTickingEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('tickingEnabled') === 'true';
+  });
+
+  const toggleTicking = () => {
+    const next = !tickingEnabled;
+    setTickingEnabled(next);
+    localStorage.setItem('tickingEnabled', String(next));
+  };
   const [segments, setLocalSegments] = useState<Segment[]>(() => {
     const saved = localStorage.getItem('timerSegments');
     if (saved) {
@@ -76,7 +85,15 @@ export default function Setup() {
               {t('setup.subtitle')}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Button
+              variant={tickingEnabled ? 'default' : 'outline'}
+              size="sm"
+              onClick={toggleTicking}
+              title={t('setup.tickingSound')}
+            >
+              {tickingEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
             <Label className="text-sm text-muted-foreground">{t('setup.language')}:</Label>
             <Select value={language} onValueChange={(value) => setLanguage(value as 'de' | 'en')}>
               <SelectTrigger className="w-24 bg-background">
