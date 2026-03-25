@@ -55,6 +55,21 @@ export default function Timer() {
     const next = !tickingEnabled;
     setTickingEnabled(next);
     localStorage.setItem('tickingEnabled', String(next));
+    if (next && state.isRunning && !state.isPaused) {
+      audioRef.current?.play().catch(() => {});
+    } else {
+      audioRef.current?.pause();
+    }
+  };
+
+  const handleStartPause = () => {
+    if (state.isRunning) {
+      pauseTimer();
+      audioRef.current?.pause();
+    } else {
+      startTimer();
+      if (tickingEnabled) audioRef.current?.play().catch(() => {});
+    }
   };
 
   // Create audio element once on mount
@@ -67,17 +82,6 @@ export default function Timer() {
       audioRef.current = null;
     };
   }, []);
-
-  // Play/pause audio in sync with timer state
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (tickingEnabled && state.isRunning && !state.isPaused && !state.sessionCompleted) {
-      audio.play().catch(() => {});
-    } else {
-      audio.pause();
-    }
-  }, [tickingEnabled, state.isRunning, state.isPaused, state.sessionCompleted]);
 
   // Update current time every second
   useEffect(() => {
@@ -137,8 +141,10 @@ export default function Timer() {
         e.preventDefault();
         if (state.isRunning) {
           pauseTimer();
+          audioRef.current?.pause();
         } else {
           startTimer();
+          if (tickingEnabled) audioRef.current?.play().catch(() => {});
         }
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
@@ -149,6 +155,7 @@ export default function Timer() {
       } else if (e.code === 'KeyR' && e.ctrlKey) {
         e.preventDefault();
         resetTimer();
+        audioRef.current?.pause();
       } else if (e.code === 'KeyF') {
         e.preventDefault();
         toggleFullscreen();
@@ -157,7 +164,7 @@ export default function Timer() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [state.isRunning]);
+  }, [state.isRunning, tickingEnabled]);
 
   const toggleFullscreen = async () => {
     try {
@@ -537,7 +544,7 @@ export default function Timer() {
           </Button>
 
           <Button
-            onClick={state.isRunning ? pauseTimer : startTimer}
+            onClick={handleStartPause}
             size="lg"
             className="w-40 h-14 text-lg"
             title={t('common.tooltipStartPause')}
@@ -566,7 +573,7 @@ export default function Timer() {
             <ChevronRight className="h-6 w-6" />
           </Button>
 
-          <Button onClick={resetTimer} size="lg" variant="outline" title={t('timer.tooltipReset')}>
+          <Button onClick={() => { resetTimer(); audioRef.current?.pause(); }} size="lg" variant="outline" title={t('timer.tooltipReset')}>
             <RotateCcw className="h-5 w-5" />
           </Button>
 
@@ -595,19 +602,20 @@ export default function Timer() {
 
           {!isFullscreen && (
             isLastSegment() && state.isRunning ? (
-              <Button 
+              <Button
                 onClick={() => {
+                  audioRef.current?.pause();
                   endSession();
                   setLocation('/');
-                }} 
-                size="lg" 
+                }}
+                size="lg"
                 variant="default"
                 className="bg-primary hover:bg-primary/90"
               >
                 {t('timer.endSession')}
               </Button>
             ) : (
-              <Button onClick={() => setLocation('/')} size="lg" variant="outline" title={t('timer.tooltipSettings')}>
+              <Button onClick={() => { audioRef.current?.pause(); setLocation('/'); }} size="lg" variant="outline" title={t('timer.tooltipSettings')}>
                 <Settings className="h-5 w-5" />
               </Button>
             )
