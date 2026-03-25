@@ -2,7 +2,7 @@
 
 Professioneller Präsentations-Timer für Webinare, Workshops und Bühnenauftritte.
 
-**Live:** https://DEIN-USERNAME.github.io/stage-timer/
+**Live:** https://bireggbaum-beep.github.io/stage-timer/
 
 ## Features
 
@@ -22,7 +22,7 @@ Professioneller Präsentations-Timer für Webinare, Workshops und Bühnenauftrit
 ```bash
 gh repo create stage-timer --public
 git init
-git remote add origin git@github.com:DEIN-USERNAME/stage-timer.git
+git remote add origin git@github.com:bireggbaum-beep/stage-timer.git
 ```
 
 ### 2. GitHub Pages aktivieren

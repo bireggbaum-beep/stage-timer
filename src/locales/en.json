@@ -16,7 +16,8 @@
     "hints": "Hints:",
     "hintAuto": "The segment automatically switches to the next one after completion",
     "hintManual": "The segment shows overtime (+MM:SS) after completion and waits for manual switch",
-    "language": "Language"
+    "language": "Language",
+    "tickingSound": "Toggle ticking sound"
   },
   "timer": {
     "noSegments": "No segments configured",
@@ -46,7 +47,8 @@
     "tooltipFullscreen": "Fullscreen Mode",
     "tooltipSettings": "Back to Setup",
     "tooltipExtendTime": "Extend planned end time by 5 minutes",
-    "tooltipSmartCompensate": "Proportionally shorten remaining segments to meet planned end time"
+    "tooltipSmartCompensate": "Proportionally shorten remaining segments to meet planned end time",
+    "tooltipTicking": "Toggle ticking sound"
   },
   "common": {
     "auto": "Automatic",
