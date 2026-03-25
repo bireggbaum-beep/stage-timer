@@ -232,6 +232,17 @@ export default function Setup() {
             </li>
           </ul>
         </div>
+
+        <div className="mt-4 text-center text-xs text-muted-foreground">
+          <a
+            href="https://bireggbaum-beep.github.io/stage-timer/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            https://bireggbaum-beep.github.io/stage-timer/
+          </a>
+        </div>
       </div>
     </div>
   );
