@@ -58,6 +58,10 @@ export default function Timer() {
     });
   };
 
+  const pauseAudio = () => {
+    audioRef.current?.pause();
+  };
+
   const toggleTicking = () => {
     const next = !tickingEnabled;
     setTickingEnabled(next);
@@ -65,19 +69,33 @@ export default function Timer() {
     if (next && state.isRunning && !state.isPaused) {
       playAudio();
     } else {
-      audioRef.current?.pause();
+      pauseAudio();
     }
   };
 
   const handleStartPause = () => {
-    if (state.isRunning) {
-      pauseTimer();
-      audioRef.current?.pause();
-    } else {
+    if (!state.isRunning) {
+      // Stopped → Start
       startTimer();
       if (tickingEnabled) playAudio();
+    } else if (state.isPaused) {
+      // Paused → Resume
+      pauseTimer();
+      if (tickingEnabled) playAudio();
+    } else {
+      // Running → Pause
+      pauseTimer();
+      pauseAudio();
     }
   };
+
+  // Safety net: ensure audio is always paused when it should be.
+  // Never calls play() — that is exclusively triggered by user gestures.
+  useEffect(() => {
+    if (!tickingEnabled || !state.isRunning || state.isPaused) {
+      pauseAudio();
+    }
+  }, [tickingEnabled, state.isRunning, state.isPaused]);
 
   // Update current time every second
   useEffect(() => {
@@ -135,13 +153,7 @@ export default function Timer() {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        if (state.isRunning) {
-          pauseTimer();
-          audioRef.current?.pause();
-        } else {
-          startTimer();
-          if (tickingEnabled) audioRef.current?.play().catch(() => {});
-        }
+        handleStartPause();
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
         nextSegment();
@@ -151,7 +163,7 @@ export default function Timer() {
       } else if (e.code === 'KeyR' && e.ctrlKey) {
         e.preventDefault();
         resetTimer();
-        audioRef.current?.pause();
+        pauseAudio();
       } else if (e.code === 'KeyF') {
         e.preventDefault();
         toggleFullscreen();
@@ -160,7 +172,7 @@ export default function Timer() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [state.isRunning, tickingEnabled]);
+  }, [state.isRunning, state.isPaused, tickingEnabled]);
 
   const toggleFullscreen = async () => {
     try {
@@ -569,7 +581,7 @@ export default function Timer() {
             <ChevronRight className="h-6 w-6" />
           </Button>
 
-          <Button onClick={() => { resetTimer(); audioRef.current?.pause(); }} size="lg" variant="outline" title={t('timer.tooltipReset')}>
+          <Button onClick={() => { resetTimer(); pauseAudio(); }} size="lg" variant="outline" title={t('timer.tooltipReset')}>
             <RotateCcw className="h-5 w-5" />
           </Button>
 
@@ -600,7 +612,7 @@ export default function Timer() {
             isLastSegment() && state.isRunning ? (
               <Button
                 onClick={() => {
-                  audioRef.current?.pause();
+                  pauseAudio();
                   endSession();
                   setLocation('/');
                 }}
@@ -611,7 +623,7 @@ export default function Timer() {
                 {t('timer.endSession')}
               </Button>
             ) : (
-              <Button onClick={() => { audioRef.current?.pause(); setLocation('/'); }} size="lg" variant="outline" title={t('timer.tooltipSettings')}>
+              <Button onClick={() => { pauseAudio(); setLocation('/'); }} size="lg" variant="outline" title={t('timer.tooltipSettings')}>
                 <Settings className="h-5 w-5" />
               </Button>
             )
