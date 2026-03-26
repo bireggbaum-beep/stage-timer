@@ -44,20 +44,26 @@ export default function Timer() {
   const [fullscreenAvailable, setFullscreenAvailable] = useState(true);
   const [pauseDuration, setPauseDuration] = useState(0);
   const [tickingEnabled, setTickingEnabled] = useState<boolean>(() => {
-    const stored = localStorage.getItem('tickingEnabled');
+    const stored = localStorage.getItem('tickingEnabled_v2');
     return stored === null ? true : stored === 'true';
   });
   const timelineRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<any>(null);
   const pauseStartTimeRef = useRef<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const playAudio = () => {
+    audioRef.current?.play().catch((err) => {
+      if (err.name !== 'NotAllowedError') console.warn('Audio:', err.name, err.message);
+    });
+  };
 
   const toggleTicking = () => {
     const next = !tickingEnabled;
     setTickingEnabled(next);
-    localStorage.setItem('tickingEnabled', String(next));
+    localStorage.setItem('tickingEnabled_v2', String(next));
     if (next && state.isRunning && !state.isPaused) {
-      audioRef.current?.play().catch(() => {});
+      playAudio();
     } else {
       audioRef.current?.pause();
     }
@@ -69,20 +75,9 @@ export default function Timer() {
       audioRef.current?.pause();
     } else {
       startTimer();
-      if (tickingEnabled) audioRef.current?.play().catch(() => {});
+      if (tickingEnabled) playAudio();
     }
   };
-
-  // Create audio element once on mount
-  useEffect(() => {
-    const audio = new Audio(`${import.meta.env.BASE_URL}ticking.m4a`);
-    audio.loop = true;
-    audioRef.current = audio;
-    return () => {
-      audio.pause();
-      audioRef.current = null;
-    };
-  }, []);
 
   // Update current time every second
   useEffect(() => {
@@ -633,6 +628,9 @@ export default function Timer() {
           </div>
         </div>
       </div>
+
+      {/* Hidden audio element — preloads on mount, controlled via ref */}
+      <audio ref={audioRef} src={`${import.meta.env.BASE_URL}ticking.m4a`} loop preload="auto" />
     </div>
   );
 }

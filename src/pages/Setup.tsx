@@ -16,14 +16,14 @@ export default function Setup() {
   const [, setLocation] = useLocation();
   const [plannedEndTimeInput, setPlannedEndTimeInput] = useState<string>('');
   const [tickingEnabled, setTickingEnabled] = useState<boolean>(() => {
-    const stored = localStorage.getItem('tickingEnabled');
+    const stored = localStorage.getItem('tickingEnabled_v2');
     return stored === null ? true : stored === 'true';
   });
 
   const toggleTicking = () => {
     const next = !tickingEnabled;
     setTickingEnabled(next);
-    localStorage.setItem('tickingEnabled', String(next));
+    localStorage.setItem('tickingEnabled_v2', String(next));
   };
   const [segments, setLocalSegments] = useState<Segment[]>(() => {
     const saved = localStorage.getItem('timerSegments');
