@@ -50,16 +50,42 @@ export default function Timer() {
   const timelineRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<any>(null);
   const pauseStartTimeRef = useRef<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  // Web Audio API refs — seamless gapless looping at the sample level
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioBufferRef = useRef<AudioBuffer | null>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const playbackOffsetRef = useRef(0);
+  const playbackStartRef = useRef(0);
 
   const playAudio = () => {
-    audioRef.current?.play().catch((err) => {
-      if (err.name !== 'NotAllowedError') console.warn('Audio:', err.name, err.message);
-    });
+    const ctx = audioCtxRef.current;
+    const buffer = audioBufferRef.current;
+    if (!ctx || !buffer) return;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    try { sourceRef.current?.stop(); } catch { /* already stopped */ }
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.connect(ctx.destination);
+    source.start(0, playbackOffsetRef.current % buffer.duration);
+
+    sourceRef.current = source;
+    playbackStartRef.current = ctx.currentTime - playbackOffsetRef.current;
   };
 
   const pauseAudio = () => {
-    audioRef.current?.pause();
+    const ctx = audioCtxRef.current;
+    const buffer = audioBufferRef.current;
+    if (!ctx || !sourceRef.current) return;
+
+    playbackOffsetRef.current = buffer
+      ? (ctx.currentTime - playbackStartRef.current) % buffer.duration
+      : 0;
+
+    try { sourceRef.current.stop(); } catch { /* already stopped */ }
+    sourceRef.current = null;
   };
 
   const toggleTicking = () => {
@@ -88,6 +114,23 @@ export default function Timer() {
       pauseAudio();
     }
   };
+
+  // Fetch and decode audio buffer on mount
+  useEffect(() => {
+    const ctx = new AudioContext();
+    audioCtxRef.current = ctx;
+
+    fetch(`${import.meta.env.BASE_URL}ticking.m4a`)
+      .then((r) => r.arrayBuffer())
+      .then((buf) => ctx.decodeAudioData(buf))
+      .then((decoded) => { audioBufferRef.current = decoded; })
+      .catch((err) => console.warn('Audio load:', err.message));
+
+    return () => {
+      try { sourceRef.current?.stop(); } catch { /* noop */ }
+      ctx.close();
+    };
+  }, []);
 
   // Safety net: ensure audio is always paused when it should be.
   // Never calls play() — that is exclusively triggered by user gestures.
@@ -641,8 +684,6 @@ export default function Timer() {
         </div>
       </div>
 
-      {/* Hidden audio element — preloads on mount, controlled via ref */}
-      <audio ref={audioRef} src={`${import.meta.env.BASE_URL}ticking.m4a`} loop preload="auto" />
     </div>
   );
 }
