@@ -189,13 +189,13 @@ export default function Setup() {
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDragEnd={handleDragEnd}
-                className={`grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_1fr_auto_auto_auto] gap-3 p-4 rounded-lg bg-muted/30 border-2 transition-colors ${
+                className={`flex gap-3 p-4 rounded-lg bg-muted/30 border-2 transition-colors ${
                   dragOverIndex === index ? 'border-primary' : 'border-border'
                 }`}
               >
                 {/* Grip handle */}
                 <div
-                  className="flex items-center touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                  className="flex items-center shrink-0 touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
                   onTouchStart={(e) => handleTouchStart(index, e)}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
@@ -203,22 +203,79 @@ export default function Setup() {
                   <GripVertical className="h-5 w-5" />
                 </div>
 
-                {/* Title */}
-                <div className="space-y-1 min-w-0">
-                  <Label htmlFor={`title-${segment.id}`} className="text-xs text-muted-foreground">
-                    {index + 1}.
-                  </Label>
-                  <Input
-                    id={`title-${segment.id}`}
-                    value={segment.title}
-                    onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
-                    placeholder="Titel"
-                    className="bg-background"
-                  />
+                {/* Content */}
+                <div className="flex-1 min-w-0 space-y-3">
+                  {/* Row 1: Title */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground shrink-0">{index + 1}.</span>
+                    <Input
+                      id={`title-${segment.id}`}
+                      value={segment.title}
+                      onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
+                      placeholder={t('setup.segment')}
+                      className="bg-background"
+                    />
+                  </div>
+
+                  {/* Row 2: Duration + Mode */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id={`duration-${segment.id}`}
+                        type="text"
+                        inputMode="numeric"
+                        value={segment.durationMinutes === 0 ? '' : segment.durationMinutes}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9]/g, '');
+                          if (value === '') {
+                            updateSegment(segment.id, 'durationMinutes', 0);
+                          } else {
+                            const num = parseInt(value);
+                            updateSegment(segment.id, 'durationMinutes', num);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || parseInt(value) < 1) {
+                            updateSegment(segment.id, 'durationMinutes', 1);
+                          }
+                        }}
+                        placeholder="Min."
+                        className="bg-background w-16"
+                      />
+                      <span className="text-xs text-muted-foreground">min</span>
+                      <div className="flex gap-1">
+                        {[5, 10, 15, 20, 25].map((min) => (
+                          <Button
+                            key={min}
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateSegment(segment.id, 'durationMinutes', min)}
+                            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+                          >
+                            {min}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    <Select
+                      value={segment.mode}
+                      onValueChange={(value) => updateSegment(segment.id, 'mode', value as SegmentMode)}
+                    >
+                      <SelectTrigger id={`mode-${segment.id}`} className="bg-background w-36">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">{t('setup.modeAuto')}</SelectItem>
+                        <SelectItem value="manual">{t('setup.modeManual')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                {/* Delete (visible on mobile in top row) */}
-                <div className="flex items-end md:order-last">
+                {/* Delete */}
+                <div className="flex items-start shrink-0">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -228,67 +285,6 @@ export default function Setup() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
-
-                {/* Duration */}
-                <div className="col-start-2 md:col-start-auto space-y-1">
-                  <Label htmlFor={`duration-${segment.id}`} className="text-xs text-muted-foreground">{t('setup.duration')}</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id={`duration-${segment.id}`}
-                      type="text"
-                      inputMode="numeric"
-                      value={segment.durationMinutes === 0 ? '' : segment.durationMinutes}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, '');
-                        if (value === '') {
-                          updateSegment(segment.id, 'durationMinutes', 0);
-                        } else {
-                          const num = parseInt(value);
-                          updateSegment(segment.id, 'durationMinutes', num);
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const value = e.target.value;
-                        if (value === '' || parseInt(value) < 1) {
-                          updateSegment(segment.id, 'durationMinutes', 1);
-                        }
-                      }}
-                      placeholder="Min."
-                      className="bg-background w-20"
-                    />
-                    <div className="flex gap-1">
-                      {[5, 10, 15, 20, 25].map((min) => (
-                        <Button
-                          key={min}
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => updateSegment(segment.id, 'durationMinutes', min)}
-                          className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
-                        >
-                          {min}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mode */}
-                <div className="col-start-2 md:col-start-auto space-y-1">
-                  <Label htmlFor={`mode-${segment.id}`} className="text-xs text-muted-foreground">{t('setup.mode')}</Label>
-                  <Select
-                    value={segment.mode}
-                    onValueChange={(value) => updateSegment(segment.id, 'mode', value as SegmentMode)}
-                  >
-                    <SelectTrigger id={`mode-${segment.id}`} className="bg-background w-full md:w-36">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">{t('setup.modeAuto')}</SelectItem>
-                      <SelectItem value="manual">{t('setup.modeManual')}</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             ))}
