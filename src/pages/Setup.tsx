@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { Trash2, Plus, Play, Volume2, VolumeX, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, Plus, Play, Volume2, VolumeX, GripVertical } from 'lucide-react';
 import TemplateManager from '@/components/TemplateManager';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -63,12 +63,27 @@ export default function Setup() {
     }
   };
 
-  const moveSegment = (index: number, direction: -1 | 1) => {
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= segments.length) return;
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+
+  const handleDragStart = (index: number) => {
+    dragItem.current = index;
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    dragOverItem.current = index;
+  };
+
+  const handleDrop = () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === dragOverItem.current) return;
     const updated = [...segments];
-    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+    const [dragged] = updated.splice(dragItem.current, 1);
+    updated.splice(dragOverItem.current, 0, dragged);
     setLocalSegments(updated);
+    dragItem.current = null;
+    dragOverItem.current = null;
   };
 
   const updateSegment = (id: string, field: keyof Segment, value: string | number | SegmentMode) => {
@@ -124,27 +139,14 @@ export default function Setup() {
             {segments.map((segment, index) => (
               <div
                 key={segment.id}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={handleDrop}
                 className="flex flex-col md:flex-row gap-4 p-4 rounded-lg bg-muted/30 border border-border"
               >
-                <div className="flex flex-col justify-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => moveSegment(index, -1)}
-                    disabled={index === 0}
-                    className="h-5 w-7 text-muted-foreground hover:text-foreground"
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => moveSegment(index, 1)}
-                    disabled={index === segments.length - 1}
-                    className="h-5 w-7 text-muted-foreground hover:text-foreground"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
+                <div className="flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                  <GripVertical className="h-5 w-5" />
                 </div>
                 <div className="flex-1 space-y-2">
                   <Label htmlFor={`title-${segment.id}`}>{t('setup.segment')} {index + 1}</Label>
@@ -216,27 +218,7 @@ export default function Setup() {
                   </Select>
                 </div>
 
-                <div className="flex items-end gap-1">
-                  <div className="flex flex-col">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => moveSegment(index, -1)}
-                      disabled={index === 0}
-                      className="h-5 w-7 text-muted-foreground hover:text-foreground"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => moveSegment(index, 1)}
-                      disabled={index === segments.length - 1}
-                      className="h-5 w-7 text-muted-foreground hover:text-foreground"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex items-end">
                   <Button
                     variant="ghost"
                     size="icon"
