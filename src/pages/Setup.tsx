@@ -126,6 +126,26 @@ export default function Setup() {
                 key={segment.id}
                 className="flex flex-col md:flex-row gap-4 p-4 rounded-lg bg-muted/30 border border-border"
               >
+                <div className="flex flex-col justify-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => moveSegment(index, -1)}
+                    disabled={index === 0}
+                    className="h-5 w-7 text-muted-foreground hover:text-foreground"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => moveSegment(index, 1)}
+                    disabled={index === segments.length - 1}
+                    className="h-5 w-7 text-muted-foreground hover:text-foreground"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="flex-1 space-y-2">
                   <Label htmlFor={`title-${segment.id}`}>{t('setup.segment')} {index + 1}</Label>
                   <Input
@@ -196,27 +216,7 @@ export default function Setup() {
                   </Select>
                 </div>
 
-                <div className="flex items-end gap-1">
-                  <div className="flex flex-col">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => moveSegment(index, -1)}
-                      disabled={index === 0}
-                      className="h-5 w-7 text-muted-foreground hover:text-foreground"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => moveSegment(index, 1)}
-                      disabled={index === segments.length - 1}
-                      className="h-5 w-7 text-muted-foreground hover:text-foreground"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </div>
+                <div className="flex items-end">
                   <Button
                     variant="ghost"
                     size="icon"
