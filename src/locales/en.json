@@ -50,6 +50,25 @@
     "tooltipSmartCompensate": "Proportionally shorten remaining segments to meet planned end time",
     "tooltipTicking": "Toggle ticking sound"
   },
+  "templates": {
+    "title": "Cloud Templates",
+    "save": "Save",
+    "savePlaceholder": "Template name...",
+    "load": "Load Template",
+    "refresh": "Refresh",
+    "delete": "Delete",
+    "saving": "Saving...",
+    "loading": "Loading...",
+    "errorFetch": "Could not load templates",
+    "errorSave": "Could not save template",
+    "errorDelete": "Could not delete template",
+    "empty": "No templates saved yet",
+    "saved": "Template saved",
+    "updated": "Template updated",
+    "deleted": "Template deleted",
+    "loaded": "Template loaded",
+    "nameRequired": "Please enter a name"
+  },
   "common": {
     "auto": "Automatic",
     "manual": "Manual",
