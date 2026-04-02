@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,27 +63,72 @@ export default function Setup() {
     }
   };
 
-  const dragItem = useRef<number | null>(null);
-  const dragOverItem = useRef<number | null>(null);
+  // Drag & drop state (works for both mouse and touch)
+  const dragIndex = useRef<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const segmentListRef = useRef<HTMLDivElement>(null);
 
-  const handleDragStart = (index: number) => {
-    dragItem.current = index;
+  const reorder = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const updated = [...segments];
+    const [dragged] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, dragged);
+    setLocalSegments(updated);
+  }, [segments]);
+
+  // HTML5 drag (desktop)
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    dragIndex.current = index;
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
-    dragOverItem.current = index;
+    setDragOverIndex(index);
   };
 
-  const handleDrop = () => {
-    if (dragItem.current === null || dragOverItem.current === null) return;
-    if (dragItem.current === dragOverItem.current) return;
-    const updated = [...segments];
-    const [dragged] = updated.splice(dragItem.current, 1);
-    updated.splice(dragOverItem.current, 0, dragged);
-    setLocalSegments(updated);
-    dragItem.current = null;
-    dragOverItem.current = null;
+  const handleDragEnd = () => {
+    if (dragIndex.current !== null && dragOverIndex !== null) {
+      reorder(dragIndex.current, dragOverIndex);
+    }
+    dragIndex.current = null;
+    setDragOverIndex(null);
+  };
+
+  // Touch drag (tablet/mobile)
+  const touchStartY = useRef(0);
+  const touchCurrentIndex = useRef<number | null>(null);
+
+  const handleTouchStart = (index: number, e: React.TouchEvent) => {
+    dragIndex.current = index;
+    touchCurrentIndex.current = index;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (dragIndex.current === null || !segmentListRef.current) return;
+    const touch = e.touches[0];
+    const elements = segmentListRef.current.querySelectorAll('[data-segment-index]');
+    for (const el of elements) {
+      const rect = el.getBoundingClientRect();
+      if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+        const idx = parseInt(el.getAttribute('data-segment-index')!);
+        if (idx !== touchCurrentIndex.current) {
+          touchCurrentIndex.current = idx;
+          setDragOverIndex(idx);
+        }
+        break;
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragIndex.current !== null && touchCurrentIndex.current !== null) {
+      reorder(dragIndex.current, touchCurrentIndex.current);
+    }
+    dragIndex.current = null;
+    touchCurrentIndex.current = null;
+    setDragOverIndex(null);
   };
 
   const updateSegment = (id: string, field: keyof Segment, value: string | number | SegmentMode) => {
@@ -135,32 +180,59 @@ export default function Setup() {
         <TemplateManager segments={segments} onLoadTemplate={setLocalSegments} />
 
         <Card className="p-6 mb-6 bg-card text-card-foreground">
-          <div className="space-y-4">
+          <div ref={segmentListRef} className="space-y-4">
             {segments.map((segment, index) => (
               <div
                 key={segment.id}
+                data-segment-index={index}
                 draggable
-                onDragStart={() => handleDragStart(index)}
+                onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
-                onDrop={handleDrop}
-                className="flex flex-col md:flex-row gap-4 p-4 rounded-lg bg-muted/30 border border-border"
+                onDragEnd={handleDragEnd}
+                className={`grid grid-cols-[auto_1fr_auto] md:grid-cols-[auto_1fr_auto_auto_auto] gap-3 p-4 rounded-lg bg-muted/30 border-2 transition-colors ${
+                  dragOverIndex === index ? 'border-primary' : 'border-border'
+                }`}
               >
-                <div className="flex items-center justify-center cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                {/* Grip handle */}
+                <div
+                  className="flex items-center touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                  onTouchStart={(e) => handleTouchStart(index, e)}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleTouchEnd}
+                >
                   <GripVertical className="h-5 w-5" />
                 </div>
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor={`title-${segment.id}`}>{t('setup.segment')} {index + 1}</Label>
+
+                {/* Title */}
+                <div className="space-y-1 min-w-0">
+                  <Label htmlFor={`title-${segment.id}`} className="text-xs text-muted-foreground">
+                    {index + 1}.
+                  </Label>
                   <Input
                     id={`title-${segment.id}`}
                     value={segment.title}
                     onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
-                    placeholder="Titel des Segments"
+                    placeholder="Titel"
                     className="bg-background"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor={`duration-${segment.id}`}>{t('setup.duration')}</Label>
+                {/* Delete (visible on mobile in top row) */}
+                <div className="flex items-end md:order-last">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeSegment(segment.id)}
+                    disabled={segments.length === 1}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Duration */}
+                <div className="col-start-2 md:col-start-auto space-y-1">
+                  <Label htmlFor={`duration-${segment.id}`} className="text-xs text-muted-foreground">{t('setup.duration')}</Label>
                   <div className="flex items-center gap-2">
                     <Input
                       id={`duration-${segment.id}`}
@@ -202,13 +274,14 @@ export default function Setup() {
                   </div>
                 </div>
 
-                <div className="w-full md:w-40 space-y-2">
-                  <Label htmlFor={`mode-${segment.id}`}>{t('setup.mode')}</Label>
+                {/* Mode */}
+                <div className="col-start-2 md:col-start-auto space-y-1">
+                  <Label htmlFor={`mode-${segment.id}`} className="text-xs text-muted-foreground">{t('setup.mode')}</Label>
                   <Select
                     value={segment.mode}
                     onValueChange={(value) => updateSegment(segment.id, 'mode', value as SegmentMode)}
                   >
-                    <SelectTrigger id={`mode-${segment.id}`} className="bg-background">
+                    <SelectTrigger id={`mode-${segment.id}`} className="bg-background w-full md:w-36">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -216,18 +289,6 @@ export default function Setup() {
                       <SelectItem value="manual">{t('setup.modeManual')}</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div className="flex items-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeSegment(segment.id)}
-                    disabled={segments.length === 1}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             ))}
@@ -298,4 +359,3 @@ export default function Setup() {
     </div>
   );
 }
-

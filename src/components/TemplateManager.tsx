@@ -97,13 +97,13 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
         <span>{t('templates.title')}</span>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        {/* Load row: Dropdown + Load + Delete */}
-        <div className="flex gap-1.5 flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        {/* Load: Dropdown + Load + Delete */}
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="h-8 flex-1 min-w-0 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+            className="h-9 flex-1 min-w-0 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
           >
             <option value="">
               {isLoading ? t('templates.loading') : templates.length === 0 ? t('templates.empty') : `${t('templates.load')}...`}
@@ -119,28 +119,28 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
             disabled={!selectedId}
             variant="outline"
             size="sm"
-            className="shrink-0 h-8 px-2"
+            className="shrink-0 h-9 w-9 p-0"
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download className="h-4 w-4" />
           </Button>
           <Button
             onClick={handleDelete}
             disabled={!selectedId}
             variant="ghost"
             size="sm"
-            className="shrink-0 h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+            className="shrink-0 h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Save row: Input + Save */}
-        <div className="flex gap-1.5">
+        {/* Save: Input + Save */}
+        <div className="flex items-center gap-1.5">
           <Input
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
             placeholder={t('templates.savePlaceholder')}
-            className="bg-background h-8 text-sm w-full sm:w-44"
+            className="bg-background h-9 text-sm w-full sm:w-44"
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSave();
             }}
@@ -149,9 +149,9 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
             onClick={handleSave}
             disabled={isSaving || segments.length === 0}
             size="sm"
-            className="shrink-0 h-8 px-2"
+            className="shrink-0 h-9 px-3"
           >
-            <Save className="h-3.5 w-3.5 mr-1" />
+            <Save className="h-4 w-4 mr-1" />
             {isSaving ? '...' : t('templates.save')}
           </Button>
         </div>
