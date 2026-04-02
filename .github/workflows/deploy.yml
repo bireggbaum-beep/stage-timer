@@ -26,6 +26,10 @@ jobs:
 
       - run: npm install
       - run: npm run build
+        env:
+          VITE_AIRTABLE_PAT: ${{ secrets.VITE_AIRTABLE_PAT }}
+          VITE_AIRTABLE_BASE_ID: ${{ secrets.VITE_AIRTABLE_BASE_ID }}
+          VITE_AIRTABLE_TABLE_NAME: ${{ secrets.VITE_AIRTABLE_TABLE_NAME }}
 
       - uses: actions/upload-pages-artifact@v3
         with:

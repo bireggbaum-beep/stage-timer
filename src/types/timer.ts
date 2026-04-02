@@ -24,6 +24,13 @@ export interface TimerState {
   sessionStartTime: Date | null;
 }
 
+export interface AirtableTemplate {
+  id: string;         // Airtable record ID
+  name: string;       // Template name
+  segments: Segment[];// Parsed from JSON
+  created: string;    // ISO timestamp
+}
+
 export interface TimerConfig {
   segments: Segment[];
 }

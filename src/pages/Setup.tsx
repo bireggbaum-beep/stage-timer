@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Trash2, Plus, Play, Volume2, VolumeX } from 'lucide-react';
+import TemplateManager from '@/components/TemplateManager';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Segment, SegmentMode } from '@/types/timer';
@@ -207,6 +208,8 @@ export default function Setup() {
             </Button>
           </div>
         </Card>
+
+        <TemplateManager segments={segments} onLoadTemplate={setLocalSegments} />
 
         <Card className="p-6 mb-6 bg-card text-card-foreground">
           <div className="space-y-4">

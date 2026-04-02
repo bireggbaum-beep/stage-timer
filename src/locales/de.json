@@ -50,6 +50,25 @@
     "tooltipSmartCompensate": "Verbleibende Segmente proportional kürzen, um geplante Endzeit einzuhalten",
     "tooltipTicking": "Ticken-Sound ein-/ausschalten"
   },
+  "templates": {
+    "title": "Cloud-Vorlagen",
+    "save": "Speichern",
+    "savePlaceholder": "Vorlagenname...",
+    "load": "Vorlage laden",
+    "refresh": "Aktualisieren",
+    "delete": "Löschen",
+    "saving": "Wird gespeichert...",
+    "loading": "Wird geladen...",
+    "errorFetch": "Vorlagen konnten nicht geladen werden",
+    "errorSave": "Vorlage konnte nicht gespeichert werden",
+    "errorDelete": "Vorlage konnte nicht gelöscht werden",
+    "empty": "Noch keine Vorlagen gespeichert",
+    "saved": "Vorlage gespeichert",
+    "updated": "Vorlage aktualisiert",
+    "deleted": "Vorlage gelöscht",
+    "loaded": "Vorlage geladen",
+    "nameRequired": "Bitte Name eingeben"
+  },
   "common": {
     "auto": "Automatisch",
     "manual": "Manuell",
