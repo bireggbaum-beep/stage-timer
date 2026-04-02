@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { Trash2, Plus, Play, Volume2, VolumeX } from 'lucide-react';
+import { Trash2, Plus, Play, Volume2, VolumeX, ChevronUp, ChevronDown } from 'lucide-react';
 import TemplateManager from '@/components/TemplateManager';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -61,6 +61,14 @@ export default function Setup() {
     if (segments.length > 1) {
       setLocalSegments(segments.filter((s) => s.id !== id));
     }
+  };
+
+  const moveSegment = (index: number, direction: -1 | 1) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= segments.length) return;
+    const updated = [...segments];
+    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+    setLocalSegments(updated);
   };
 
   const updateSegment = (id: string, field: keyof Segment, value: string | number | SegmentMode) => {
@@ -188,7 +196,27 @@ export default function Setup() {
                   </Select>
                 </div>
 
-                <div className="flex items-end">
+                <div className="flex items-end gap-1">
+                  <div className="flex flex-col">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => moveSegment(index, -1)}
+                      disabled={index === 0}
+                      className="h-5 w-7 text-muted-foreground hover:text-foreground"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => moveSegment(index, 1)}
+                      disabled={index === segments.length - 1}
+                      className="h-5 w-7 text-muted-foreground hover:text-foreground"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"
