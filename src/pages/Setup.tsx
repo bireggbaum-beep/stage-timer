@@ -109,6 +109,8 @@ export default function Setup() {
           </div>
         </div>
 
+        <TemplateManager segments={segments} onLoadTemplate={setLocalSegments} />
+
         <Card className="p-6 mb-6 bg-card text-card-foreground">
           <div className="space-y-4">
             {segments.map((segment, index) => (
@@ -208,8 +210,6 @@ export default function Setup() {
             </Button>
           </div>
         </Card>
-
-        <TemplateManager segments={segments} onLoadTemplate={setLocalSegments} />
 
         <Card className="p-6 mb-6 bg-card text-card-foreground">
           <div className="space-y-4">

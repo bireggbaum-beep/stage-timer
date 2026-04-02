@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
 import { Cloud, RefreshCw, Trash2, Save, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Segment, AirtableTemplate } from '@/types/timer';
@@ -36,10 +35,7 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
     const result = await fetchTemplates();
     setTemplates(result);
     setIsLoading(false);
-    if (result.length === 0 && isOpen) {
-      // Don't show error on empty list
-    }
-  }, [isOpen]);
+  }, []);
 
   useEffect(() => {
     if (isOpen && templates.length === 0) {
@@ -91,41 +87,31 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
     showStatus(t('templates.loaded'));
   };
 
-  const formatDate = (iso: string) => {
-    if (!iso) return '';
-    try {
-      return new Date(iso).toLocaleDateString();
-    } catch {
-      return '';
-    }
-  };
-
   return (
-    <Card className="p-6 mb-6 bg-card text-card-foreground">
+    <div className="mb-4">
+      {/* Compact toggle bar */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between text-left"
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
-        <div className="flex items-center gap-2">
-          <Cloud className="h-5 w-5 text-primary" />
-          <span className="font-semibold text-lg">{t('templates.title')}</span>
-        </div>
+        <Cloud className="h-4 w-4" />
+        <span>{t('templates.title')}</span>
         {isOpen ? (
-          <ChevronUp className="h-5 w-5 text-muted-foreground" />
+          <ChevronUp className="h-3 w-3" />
         ) : (
-          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+          <ChevronDown className="h-3 w-3" />
         )}
       </button>
 
       {isOpen && (
-        <div className="mt-4 space-y-4">
-          {/* Save section */}
+        <div className="mt-3 p-4 rounded-lg border border-border bg-muted/20 space-y-3">
+          {/* Save row */}
           <div className="flex gap-2">
             <Input
               value={saveName}
               onChange={(e) => setSaveName(e.target.value)}
               placeholder={t('templates.savePlaceholder')}
-              className="bg-background flex-1"
+              className="bg-background flex-1 h-8 text-sm"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSave();
               }}
@@ -133,17 +119,27 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
             <Button
               onClick={handleSave}
               disabled={isSaving || segments.length === 0}
-              className="shrink-0"
+              size="sm"
+              className="shrink-0 h-8"
             >
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-3 w-3 mr-1" />
               {isSaving ? t('templates.saving') : t('templates.save')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={loadTemplates}
+              disabled={isLoading}
+              className="shrink-0 h-8 px-2"
+            >
+              <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
 
           {/* Status message */}
           {statusMsg && (
             <div
-              className={`text-sm px-3 py-2 rounded ${
+              className={`text-xs px-2 py-1 rounded ${
                 statusMsg.isError
                   ? 'bg-destructive/10 text-destructive'
                   : 'bg-primary/10 text-primary'
@@ -154,63 +150,40 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
           )}
 
           {/* Template list */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground font-medium">
-                {t('templates.load')}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={loadTemplates}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
+          {isLoading && templates.length === 0 ? (
+            <div className="text-xs text-muted-foreground text-center py-2">
+              {t('templates.loading')}
             </div>
-
-            {isLoading && templates.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-4 text-center">
-                {t('templates.loading')}
-              </div>
-            ) : templates.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-4 text-center">
-                {t('templates.empty')}
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {templates.map((tmpl) => (
-                  <div
-                    key={tmpl.id}
-                    className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border hover:bg-muted/50 transition-colors"
+          ) : templates.length === 0 ? (
+            <div className="text-xs text-muted-foreground text-center py-2">
+              {t('templates.empty')}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {templates.map((tmpl) => (
+                <div
+                  key={tmpl.id}
+                  className="flex items-center gap-1 pl-3 pr-1 py-1 rounded-full bg-muted/40 border border-border hover:bg-muted/60 transition-colors text-sm"
+                >
+                  <button
+                    onClick={() => handleLoad(tmpl)}
+                    className="flex items-center gap-1.5"
                   >
-                    <button
-                      onClick={() => handleLoad(tmpl)}
-                      className="flex-1 text-left flex items-center gap-3 min-w-0"
-                    >
-                      <Download className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{tmpl.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {tmpl.segments.length} Segment{tmpl.segments.length !== 1 ? 'e' : ''} &middot; {formatDate(tmpl.created)}
-                        </div>
-                      </div>
-                    </button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(tmpl.id)}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                    <Download className="h-3 w-3 text-muted-foreground" />
+                    <span>{tmpl.name}</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(tmpl.id)}
+                    className="ml-1 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
-    </Card>
+    </div>
   );
 }
