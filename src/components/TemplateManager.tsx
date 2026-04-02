@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Cloud, RefreshCw, Trash2, Save, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { Cloud, Trash2, Save, Download } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Segment, AirtableTemplate } from '@/types/timer';
 import {
@@ -18,11 +18,11 @@ interface TemplateManagerProps {
 
 export default function TemplateManager({ segments, onLoadTemplate }: TemplateManagerProps) {
   const { t } = useLanguage();
-  const [isOpen, setIsOpen] = useState(false);
   const [templates, setTemplates] = useState<AirtableTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveName, setSaveName] = useState('');
+  const [selectedId, setSelectedId] = useState('');
   const [statusMsg, setStatusMsg] = useState<{ text: string; isError: boolean } | null>(null);
 
   const showStatus = useCallback((text: string, isError = false) => {
@@ -34,14 +34,13 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
     setIsLoading(true);
     const result = await fetchTemplates();
     setTemplates(result);
+    setSelectedId('');
     setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    if (isOpen && templates.length === 0) {
-      loadTemplates();
-    }
-  }, [isOpen, loadTemplates, templates.length]);
+    loadTemplates();
+  }, [loadTemplates]);
 
   if (!isConfigured()) return null;
 
@@ -66,17 +65,9 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const ok = await deleteTemplate(id);
-    if (ok) {
-      setTemplates((prev) => prev.filter((tmpl) => tmpl.id !== id));
-      showStatus(t('templates.deleted'));
-    } else {
-      showStatus(t('templates.errorDelete'), true);
-    }
-  };
-
-  const handleLoad = (tmpl: AirtableTemplate) => {
+  const handleLoad = () => {
+    const tmpl = templates.find((t) => t.id === selectedId);
+    if (!tmpl) return;
     const freshSegments = tmpl.segments.map((s) => ({
       ...s,
       id: crypto.randomUUID(),
@@ -87,101 +78,95 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
     showStatus(t('templates.loaded'));
   };
 
+  const handleDelete = async () => {
+    if (!selectedId) return;
+    const ok = await deleteTemplate(selectedId);
+    if (ok) {
+      setTemplates((prev) => prev.filter((tmpl) => tmpl.id !== selectedId));
+      setSelectedId('');
+      showStatus(t('templates.deleted'));
+    } else {
+      showStatus(t('templates.errorDelete'), true);
+    }
+  };
+
   return (
-    <div className="mb-4">
-      {/* Compact toggle bar */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <Cloud className="h-4 w-4" />
+    <div className="mb-4 space-y-2">
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Cloud className="h-3.5 w-3.5" />
         <span>{t('templates.title')}</span>
-        {isOpen ? (
-          <ChevronUp className="h-3 w-3" />
-        ) : (
-          <ChevronDown className="h-3 w-3" />
-        )}
-      </button>
+      </div>
 
-      {isOpen && (
-        <div className="mt-3 p-4 rounded-lg border border-border bg-muted/20 space-y-3">
-          {/* Save row */}
-          <div className="flex gap-2">
-            <Input
-              value={saveName}
-              onChange={(e) => setSaveName(e.target.value)}
-              placeholder={t('templates.savePlaceholder')}
-              className="bg-background flex-1 h-8 text-sm"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSave();
-              }}
-            />
-            <Button
-              onClick={handleSave}
-              disabled={isSaving || segments.length === 0}
-              size="sm"
-              className="shrink-0 h-8"
-            >
-              <Save className="h-3 w-3 mr-1" />
-              {isSaving ? t('templates.saving') : t('templates.save')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={loadTemplates}
-              disabled={isLoading}
-              className="shrink-0 h-8 px-2"
-            >
-              <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        {/* Load row: Dropdown + Load + Delete */}
+        <div className="flex gap-1.5 flex-1">
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="h-8 flex-1 min-w-0 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+          >
+            <option value="">
+              {isLoading ? t('templates.loading') : templates.length === 0 ? t('templates.empty') : `${t('templates.load')}...`}
+            </option>
+            {templates.map((tmpl) => (
+              <option key={tmpl.id} value={tmpl.id}>
+                {tmpl.name} ({tmpl.segments.length} Seg.)
+              </option>
+            ))}
+          </select>
+          <Button
+            onClick={handleLoad}
+            disabled={!selectedId}
+            variant="outline"
+            size="sm"
+            className="shrink-0 h-8 px-2"
+          >
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            onClick={handleDelete}
+            disabled={!selectedId}
+            variant="ghost"
+            size="sm"
+            className="shrink-0 h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
 
-          {/* Status message */}
-          {statusMsg && (
-            <div
-              className={`text-xs px-2 py-1 rounded ${
-                statusMsg.isError
-                  ? 'bg-destructive/10 text-destructive'
-                  : 'bg-primary/10 text-primary'
-              }`}
-            >
-              {statusMsg.text}
-            </div>
-          )}
+        {/* Save row: Input + Save */}
+        <div className="flex gap-1.5">
+          <Input
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            placeholder={t('templates.savePlaceholder')}
+            className="bg-background h-8 text-sm w-full sm:w-44"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave();
+            }}
+          />
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || segments.length === 0}
+            size="sm"
+            className="shrink-0 h-8 px-2"
+          >
+            <Save className="h-3.5 w-3.5 mr-1" />
+            {isSaving ? '...' : t('templates.save')}
+          </Button>
+        </div>
+      </div>
 
-          {/* Template list */}
-          {isLoading && templates.length === 0 ? (
-            <div className="text-xs text-muted-foreground text-center py-2">
-              {t('templates.loading')}
-            </div>
-          ) : templates.length === 0 ? (
-            <div className="text-xs text-muted-foreground text-center py-2">
-              {t('templates.empty')}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {templates.map((tmpl) => (
-                <div
-                  key={tmpl.id}
-                  className="flex items-center gap-1 pl-3 pr-1 py-1 rounded-full bg-muted/40 border border-border hover:bg-muted/60 transition-colors text-sm"
-                >
-                  <button
-                    onClick={() => handleLoad(tmpl)}
-                    className="flex items-center gap-1.5"
-                  >
-                    <Download className="h-3 w-3 text-muted-foreground" />
-                    <span>{tmpl.name}</span>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(tmpl.id)}
-                    className="ml-1 p-1 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Status message */}
+      {statusMsg && (
+        <div
+          className={`text-xs px-2 py-1 rounded ${
+            statusMsg.isError
+              ? 'bg-destructive/10 text-destructive'
+              : 'bg-primary/10 text-primary'
+          }`}
+        >
+          {statusMsg.text}
         </div>
       )}
     </div>
