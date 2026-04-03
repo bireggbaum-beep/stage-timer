@@ -13,6 +13,8 @@ import {
   List,
   Volume2,
   VolumeX,
+  SkipForward,
+  Hand,
 } from 'lucide-react';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -35,6 +37,7 @@ export default function Timer() {
     smartCompensate,
     endSession,
     isLastSegment,
+    toggleCurrentSegmentMode,
   } = useTimer();
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
@@ -345,8 +348,10 @@ export default function Timer() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* Sticky header: progress bars always visible even when content scrolls */}
+      <div className="sticky top-0 z-10">
       {/* Progress Bar - fixed gradient with shrinking overlay from left to right */}
-      <div 
+      <div
         className="w-full h-6 relative overflow-hidden"
         style={{
           background: 'linear-gradient(to right, var(--timer-green) 0%, var(--timer-green) 75%, var(--timer-yellow) 75%, var(--timer-yellow) 90%, var(--timer-red) 90%, var(--timer-red) 100%)'
@@ -408,6 +413,7 @@ export default function Timer() {
           );
         })}
       </div>
+      </div>{/* end sticky header */}
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
@@ -417,9 +423,6 @@ export default function Timer() {
             {t('timer.segment')} {state.currentSegmentIndex + 1} {t('common.of')} {state.segments.length}
           </div>
           <h1 className="text-4xl md:text-6xl font-bold">{currentSegment.title}</h1>
-          <div className="text-sm text-muted-foreground mt-2">
-            {t('common.mode')}: {currentSegment.mode === 'auto' ? t('common.auto') : t('common.manual')}
-          </div>
         </div>
 
         {/* Main Timer Display */}
@@ -643,6 +646,17 @@ export default function Timer() {
 
           <Button onClick={() => setShowSegmentList(!showSegmentList)} size="lg" variant="outline" title={t('timer.tooltipList')}>
             <List className="h-5 w-5" />
+          </Button>
+
+          <Button
+            onClick={toggleCurrentSegmentMode}
+            size="lg"
+            variant={currentSegment.mode === 'manual' ? 'default' : 'outline'}
+            title={currentSegment.mode === 'auto' ? t('common.auto') : t('common.manual')}
+          >
+            {currentSegment.mode === 'auto'
+              ? <SkipForward className="h-5 w-5" />
+              : <Hand className="h-5 w-5" />}
           </Button>
 
           {fullscreenAvailable && (

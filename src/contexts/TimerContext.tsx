@@ -19,6 +19,7 @@ interface TimerContextType {
   smartCompensate: () => void;
   endSession: () => void;
   isLastSegment: () => boolean;
+  toggleCurrentSegmentMode: () => void;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -305,6 +306,17 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     setState(getInitialState());
   }, []);
 
+  const toggleCurrentSegmentMode = useCallback(() => {
+    setState((prev) => {
+      const newSegments = prev.segments.map((seg, i) =>
+        i === prev.currentSegmentIndex
+          ? { ...seg, mode: seg.mode === 'auto' ? 'manual' : 'auto' as 'auto' | 'manual' }
+          : seg
+      );
+      return { ...prev, segments: newSegments };
+    });
+  }, []);
+
   const smartCompensate = useCallback(() => {
     if (!state.plannedEndTime) return;
 
@@ -396,6 +408,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         smartCompensate,
         endSession,
         isLastSegment,
+        toggleCurrentSegmentMode,
       }}
     >
       {children}
