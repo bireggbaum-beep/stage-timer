@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Cloud, Trash2, Save, Download } from 'lucide-react';
+import { Cloud, X, Save } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Segment, AirtableTemplate } from '@/types/timer';
 import {
@@ -22,7 +22,6 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveName, setSaveName] = useState('');
-  const [selectedId, setSelectedId] = useState('');
   const [statusMsg, setStatusMsg] = useState<{ text: string; isError: boolean } | null>(null);
 
   const showStatus = useCallback((text: string, isError = false) => {
@@ -34,7 +33,6 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
     setIsLoading(true);
     const result = await fetchTemplates();
     setTemplates(result);
-    setSelectedId('');
     setIsLoading(false);
   }, []);
 
@@ -65,9 +63,7 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
     }
   };
 
-  const handleLoad = () => {
-    const tmpl = templates.find((t) => t.id === selectedId);
-    if (!tmpl) return;
+  const handleLoad = (tmpl: AirtableTemplate) => {
     const freshSegments = tmpl.segments.map((s) => ({
       ...s,
       id: crypto.randomUUID(),
@@ -78,12 +74,11 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
     showStatus(t('templates.loaded'));
   };
 
-  const handleDelete = async () => {
-    if (!selectedId) return;
-    const ok = await deleteTemplate(selectedId);
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const ok = await deleteTemplate(id);
     if (ok) {
-      setTemplates((prev) => prev.filter((tmpl) => tmpl.id !== selectedId));
-      setSelectedId('');
+      setTemplates((prev) => prev.filter((tmpl) => tmpl.id !== id));
       showStatus(t('templates.deleted'));
     } else {
       showStatus(t('templates.errorDelete'), true);
@@ -97,50 +92,37 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
         <span>{t('templates.title')}</span>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        {/* Load: Dropdown + Load + Delete */}
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <select
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className="h-9 flex-1 min-w-0 rounded-md border border-border bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
-          >
-            <option value="">
-              {isLoading ? t('templates.loading') : templates.length === 0 ? t('templates.empty') : `${t('templates.load')}...`}
-            </option>
-            {templates.map((tmpl) => (
-              <option key={tmpl.id} value={tmpl.id}>
-                {tmpl.name} ({tmpl.segments.length} Seg.)
-              </option>
-            ))}
-          </select>
-          <Button
-            onClick={handleLoad}
-            disabled={!selectedId}
-            variant="outline"
-            size="sm"
-            className="shrink-0 h-9 w-9 p-0"
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button
-            onClick={handleDelete}
-            disabled={!selectedId}
-            variant="ghost"
-            size="sm"
-            className="shrink-0 h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+      {/* Chips + Save */}
+      <div className="flex flex-wrap items-center gap-2">
+        {isLoading ? (
+          <span className="text-xs text-muted-foreground">{t('templates.loading')}</span>
+        ) : templates.length === 0 ? (
+          <span className="text-xs text-muted-foreground">{t('templates.empty')}</span>
+        ) : (
+          templates.map((tmpl) => (
+            <button
+              key={tmpl.id}
+              onClick={() => handleLoad(tmpl)}
+              className="inline-flex items-center gap-1 h-7 pl-2.5 pr-1 rounded-full bg-muted/50 border border-border text-xs hover:bg-muted/80 transition-colors"
+            >
+              <span>{tmpl.name}</span>
+              <span
+                onClick={(e) => handleDelete(tmpl.id, e)}
+                className="ml-0.5 p-0.5 rounded-full hover:bg-destructive/20 hover:text-destructive transition-colors"
+              >
+                <X className="h-3 w-3" />
+              </span>
+            </button>
+          ))
+        )}
 
-        {/* Save: Input + Save */}
-        <div className="flex items-center gap-1.5">
+        {/* Save inline */}
+        <div className="inline-flex items-center gap-1.5">
           <Input
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
             placeholder={t('templates.savePlaceholder')}
-            className="bg-background h-9 text-sm w-full sm:w-44"
+            className="bg-background h-7 text-xs w-32 rounded-full px-2.5"
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSave();
             }}
@@ -149,15 +131,15 @@ export default function TemplateManager({ segments, onLoadTemplate }: TemplateMa
             onClick={handleSave}
             disabled={isSaving || segments.length === 0}
             size="sm"
-            className="shrink-0 h-9 px-3"
+            className="h-7 px-2.5 rounded-full text-xs"
           >
-            <Save className="h-4 w-4 mr-1" />
+            <Save className="h-3 w-3 mr-1" />
             {isSaving ? '...' : t('templates.save')}
           </Button>
         </div>
       </div>
 
-      {/* Status message */}
+      {/* Status */}
       {statusMsg && (
         <div
           className={`text-xs px-2 py-1 rounded ${
