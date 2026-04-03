@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { Trash2, Plus, Play, Volume2, VolumeX, GripVertical, SkipForward, Hand } from 'lucide-react';
+import { Trash2, Plus, Play, Volume2, VolumeX, GripVertical } from 'lucide-react';
 import TemplateManager from '@/components/TemplateManager';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -94,7 +94,6 @@ export default function Setup() {
     setDragOverIndex(null);
   };
 
-  // Touch drag
   const touchCurrentIndex = useRef<number | null>(null);
 
   const handleTouchStart = (index: number, e: React.TouchEvent) => {
@@ -178,7 +177,7 @@ export default function Setup() {
         <TemplateManager segments={segments} onLoadTemplate={setLocalSegments} />
 
         <Card className="p-6 mb-6 bg-card text-card-foreground">
-          <div ref={segmentListRef} className="space-y-3">
+          <div ref={segmentListRef} className="space-y-4">
             {segments.map((segment, index) => (
               <div
                 key={segment.id}
@@ -187,96 +186,104 @@ export default function Setup() {
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDragEnd={handleDragEnd}
-                className={`flex items-center gap-2 p-3 rounded-lg bg-muted/30 border-2 transition-colors ${
+                className={`flex gap-3 p-4 rounded-lg bg-muted/30 border-2 transition-colors ${
                   dragOverIndex === index ? 'border-primary' : 'border-border'
                 }`}
               >
-                {/* Grip */}
+                {/* Drag handle */}
                 <div
-                  className="shrink-0 touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                  className="hidden md:flex items-center shrink-0 touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
                   onTouchStart={(e) => handleTouchStart(index, e)}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
                 >
-                  <GripVertical className="h-4 w-4" />
+                  <GripVertical className="h-5 w-5" />
                 </div>
 
-                {/* Title */}
-                <Input
-                  id={`title-${segment.id}`}
-                  value={segment.title}
-                  onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
-                  placeholder={t('setup.segment')}
-                  className="bg-background flex-1 min-w-0"
-                />
+                {/* Original layout preserved */}
+                <div className="flex-1 flex flex-col md:flex-row gap-4">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor={`title-${segment.id}`}>{t('setup.segment')} {index + 1}</Label>
+                    <Input
+                      id={`title-${segment.id}`}
+                      value={segment.title}
+                      onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
+                      placeholder="Titel des Segments"
+                      className="bg-background"
+                    />
+                  </div>
 
-                {/* Duration */}
-                <Input
-                  id={`duration-${segment.id}`}
-                  type="text"
-                  inputMode="numeric"
-                  value={segment.durationMinutes === 0 ? '' : segment.durationMinutes}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, '');
-                    if (value === '') {
-                      updateSegment(segment.id, 'durationMinutes', 0);
-                    } else {
-                      updateSegment(segment.id, 'durationMinutes', parseInt(value));
-                    }
-                  }}
-                  onBlur={(e) => {
-                    const value = e.target.value;
-                    if (value === '' || parseInt(value) < 1) {
-                      updateSegment(segment.id, 'durationMinutes', 1);
-                    }
-                  }}
-                  placeholder="Min."
-                  className="bg-background w-14 shrink-0 text-center"
-                />
-                <span className="text-xs text-muted-foreground shrink-0">min</span>
+                  <div className="space-y-2">
+                    <Label htmlFor={`duration-${segment.id}`}>{t('setup.duration')}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id={`duration-${segment.id}`}
+                        type="text"
+                        inputMode="numeric"
+                        value={segment.durationMinutes === 0 ? '' : segment.durationMinutes}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^0-9]/g, '');
+                          if (value === '') {
+                            updateSegment(segment.id, 'durationMinutes', 0);
+                          } else {
+                            const num = parseInt(value);
+                            updateSegment(segment.id, 'durationMinutes', num);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || parseInt(value) < 1) {
+                            updateSegment(segment.id, 'durationMinutes', 1);
+                          }
+                        }}
+                        placeholder="Min."
+                        className="bg-background w-20"
+                      />
+                      <div className="flex gap-1">
+                        {[5, 10, 15, 20, 25].map((min) => (
+                          <Button
+                            key={min}
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateSegment(segment.id, 'durationMinutes', min)}
+                            className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+                          >
+                            {min}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
 
-                {/* Quick duration buttons (large screens only) */}
-                <div className="hidden lg:flex gap-1 shrink-0">
-                  {[5, 10, 15, 20, 25].map((min) => (
-                    <Button
-                      key={min}
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => updateSegment(segment.id, 'durationMinutes', min)}
-                      className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+                  <div className="w-full md:w-40 space-y-2">
+                    <Label htmlFor={`mode-${segment.id}`}>{t('setup.mode')}</Label>
+                    <Select
+                      value={segment.mode}
+                      onValueChange={(value) => updateSegment(segment.id, 'mode', value as SegmentMode)}
                     >
-                      {min}
+                      <SelectTrigger id={`mode-${segment.id}`} className="bg-background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">{t('setup.modeAuto')}</SelectItem>
+                        <SelectItem value="manual">{t('setup.modeManual')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeSegment(segment.id)}
+                      disabled={segments.length === 1}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  ))}
+                  </div>
                 </div>
-
-                {/* Mode toggle icon */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => updateSegment(segment.id, 'mode', segment.mode === 'auto' ? 'manual' : 'auto')}
-                  title={segment.mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}
-                  className="shrink-0 text-muted-foreground hover:text-foreground"
-                >
-                  {segment.mode === 'auto' ? (
-                    <SkipForward className="h-4 w-4" />
-                  ) : (
-                    <Hand className="h-4 w-4" />
-                  )}
-                </Button>
-
-                {/* Delete */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeSegment(segment.id)}
-                  disabled={segments.length === 1}
-                  className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
             ))}
           </div>
