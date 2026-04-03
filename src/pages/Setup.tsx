@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { Trash2, Plus, Play, Volume2, VolumeX, GripVertical } from 'lucide-react';
+import { X, Plus, Play, Volume2, VolumeX, GripVertical, SkipForward, Hand } from 'lucide-react';
 import TemplateManager from '@/components/TemplateManager';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -203,7 +203,16 @@ export default function Setup() {
                 {/* Original layout preserved */}
                 <div className="flex-1 flex flex-col md:flex-row gap-4">
                   <div className="flex-1 space-y-2">
-                    <Label htmlFor={`title-${segment.id}`}>{t('setup.segment')} {index + 1}</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor={`title-${segment.id}`}>{t('setup.segment')} {index + 1}</Label>
+                      <button
+                        onClick={() => removeSegment(segment.id)}
+                        disabled={segments.length === 1}
+                        className="text-muted-foreground hover:text-destructive disabled:opacity-30 transition-colors p-0.5"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                     <Input
                       id={`title-${segment.id}`}
                       value={segment.title}
@@ -256,31 +265,22 @@ export default function Setup() {
                     </div>
                   </div>
 
-                  <div className="w-full md:w-40 space-y-2">
-                    <Label htmlFor={`mode-${segment.id}`}>{t('setup.mode')}</Label>
-                    <Select
-                      value={segment.mode}
-                      onValueChange={(value) => updateSegment(segment.id, 'mode', value as SegmentMode)}
-                    >
-                      <SelectTrigger id={`mode-${segment.id}`} className="bg-background">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="auto">{t('setup.modeAuto')}</SelectItem>
-                        <SelectItem value="manual">{t('setup.modeManual')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-end">
+                  <div className="space-y-2">
+                    <Label>{t('setup.mode')}</Label>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeSegment(segment.id)}
-                      disabled={segments.length === 1}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateSegment(segment.id, 'mode', segment.mode === 'auto' ? 'manual' : 'auto')}
+                      title={segment.mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}
+                      className="h-10 px-3 gap-2"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {segment.mode === 'auto' ? (
+                        <SkipForward className="h-4 w-4" />
+                      ) : (
+                        <Hand className="h-4 w-4" />
+                      )}
+                      <span className="text-xs">{segment.mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}</span>
                     </Button>
                   </div>
                 </div>
