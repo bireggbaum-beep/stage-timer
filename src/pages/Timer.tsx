@@ -64,18 +64,23 @@ export default function Timer() {
     const ctx = audioCtxRef.current;
     const buffer = audioBufferRef.current;
     if (!ctx || !buffer) return;
-    if (ctx.state === 'suspended') ctx.resume();
 
-    try { sourceRef.current?.stop(); } catch { /* already stopped */ }
+    const startSource = () => {
+      try { sourceRef.current?.stop(); } catch { /* already stopped */ }
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      source.connect(ctx.destination);
+      source.start(0, playbackOffsetRef.current % buffer.duration);
+      sourceRef.current = source;
+      playbackStartRef.current = ctx.currentTime - playbackOffsetRef.current;
+    };
 
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-    source.connect(ctx.destination);
-    source.start(0, playbackOffsetRef.current % buffer.duration);
-
-    sourceRef.current = source;
-    playbackStartRef.current = ctx.currentTime - playbackOffsetRef.current;
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(startSource);
+    } else {
+      startSource();
+    }
   };
 
   const pauseAudio = () => {
@@ -651,12 +656,12 @@ export default function Timer() {
           <Button
             onClick={toggleCurrentSegmentMode}
             size="lg"
-            variant={currentSegment.mode === 'manual' ? 'default' : 'outline'}
+            variant="ghost"
             title={currentSegment.mode === 'auto' ? t('common.auto') : t('common.manual')}
           >
             {currentSegment.mode === 'auto'
-              ? <SkipForward className="h-5 w-5" />
-              : <Hand className="h-5 w-5" />}
+              ? <SkipForward className="h-5 w-5 text-muted-foreground" />
+              : <Hand className="h-5 w-5 text-primary" />}
           </Button>
 
           {fullscreenAvailable && (

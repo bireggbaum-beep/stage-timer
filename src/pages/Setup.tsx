@@ -269,18 +269,17 @@ export default function Setup() {
                     <Label>{t('setup.mode')}</Label>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       onClick={() => updateSegment(segment.id, 'mode', segment.mode === 'auto' ? 'manual' : 'auto')}
                       title={segment.mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}
-                      className="h-10 px-3 gap-2"
+                      className="h-8 w-8 p-0"
                     >
                       {segment.mode === 'auto' ? (
-                        <SkipForward className="h-4 w-4" />
+                        <SkipForward className="h-4 w-4 text-muted-foreground" />
                       ) : (
-                        <Hand className="h-4 w-4" />
+                        <Hand className="h-4 w-4 text-primary" />
                       )}
-                      <span className="text-xs">{segment.mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}</span>
                     </Button>
                   </div>
                 </div>
