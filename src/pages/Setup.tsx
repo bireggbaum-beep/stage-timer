@@ -218,13 +218,13 @@ export default function Setup() {
                       value={segment.title}
                       onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
                       placeholder="Titel des Segments"
-                      className="bg-background"
+                      className="bg-background w-52"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor={`duration-${segment.id}`}>{t('setup.duration')}</Label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-nowrap">
                       <Input
                         id={`duration-${segment.id}`}
                         type="text"
@@ -246,10 +246,10 @@ export default function Setup() {
                           }
                         }}
                         placeholder="Min."
-                        className="bg-background w-20"
+                        className="bg-background w-14 flex-shrink-0"
                       />
-                      <div className="flex gap-1">
-                        {[5, 10, 15, 20, 25].map((min) => (
+                      <div className="flex gap-1 flex-shrink-0">
+                        {[5, 15, 20, 25].map((min) => (
                           <Button
                             key={min}
                             type="button"
@@ -262,26 +262,19 @@ export default function Setup() {
                           </Button>
                         ))}
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => updateSegment(segment.id, 'mode', segment.mode === 'auto' ? 'manual' : 'auto')}
+                        title={segment.mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}
+                        className="flex-shrink-0 h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {segment.mode === 'auto' ? (
+                          <SkipForward className="h-4 w-4" />
+                        ) : (
+                          <Hand className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>{t('setup.mode')}</Label>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateSegment(segment.id, 'mode', segment.mode === 'auto' ? 'manual' : 'auto')}
-                      title={segment.mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}
-                      className="h-10 px-3 gap-2"
-                    >
-                      {segment.mode === 'auto' ? (
-                        <SkipForward className="h-4 w-4" />
-                      ) : (
-                        <Hand className="h-4 w-4" />
-                      )}
-                      <span className="text-xs">{segment.mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}</span>
-                    </Button>
                   </div>
                 </div>
               </div>
