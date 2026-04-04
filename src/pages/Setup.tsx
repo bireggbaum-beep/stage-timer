@@ -218,7 +218,7 @@ export default function Setup() {
                       value={segment.title}
                       onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
                       placeholder="Titel des Segments"
-                      className="bg-background w-52"
+                      className="bg-background !w-52"
                     />
                   </div>
 
@@ -246,7 +246,7 @@ export default function Setup() {
                           }
                         }}
                         placeholder="Min."
-                        className="bg-background w-14 flex-shrink-0"
+                        className="bg-background !w-14 flex-shrink-0"
                       />
                       <div className="flex gap-1 flex-shrink-0">
                         {[5, 15, 20, 25].map((min) => (
