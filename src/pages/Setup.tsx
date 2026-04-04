@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import pkg from '../../package.json';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -218,7 +219,7 @@ export default function Setup() {
                       value={segment.title}
                       onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
                       placeholder="Titel des Segments"
-                      className="bg-background !w-52"
+                      className="bg-background w-52"
                     />
                   </div>
 
@@ -246,7 +247,7 @@ export default function Setup() {
                           }
                         }}
                         placeholder="Min."
-                        className="bg-background !w-14 flex-shrink-0"
+                        className="bg-background w-14 flex-shrink-0"
                       />
                       <div className="flex gap-1 flex-shrink-0">
                         {[5, 15, 20, 25].map((min) => (
@@ -341,6 +342,7 @@ export default function Setup() {
           >
             https://bireggbaum-beep.github.io/stage-timer/
           </a>
+          <p className="text-muted-foreground/40 mt-1">v{pkg.version}</p>
         </div>
       </div>
     </div>
