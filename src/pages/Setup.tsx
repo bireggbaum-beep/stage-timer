@@ -219,7 +219,7 @@ export default function Setup() {
                       value={segment.title}
                       onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
                       placeholder="Titel des Segments"
-                      className="bg-background w-52"
+                      className="bg-background w-full"
                     />
                   </div>
 
@@ -342,7 +342,7 @@ export default function Setup() {
           >
             https://bireggbaum-beep.github.io/stage-timer/
           </a>
-          <p className="text-muted-foreground/40 mt-1">v{pkg.version}</p>
+          <p className="mt-1">v{pkg.version}</p>
         </div>
       </div>
     </div>
