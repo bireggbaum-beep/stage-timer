@@ -48,7 +48,12 @@
     "tooltipSettings": "Zurück zur Konfiguration",
     "tooltipExtendTime": "Geplante Endzeit um 5 Minuten verlängern",
     "tooltipSmartCompensate": "Verbleibende Segmente proportional kürzen, um geplante Endzeit einzuhalten",
-    "tooltipTicking": "Ticken-Sound ein-/ausschalten"
+    "tooltipTicking": "Ticken-Sound ein-/ausschalten",
+    "tooltipZen": "Zen-Modus (ablenkungsfreie Ansicht)",
+    "keyZ": "Z: Zen-Modus",
+    "zenHintTap": "Tippen: Start / Pause",
+    "zenHintSwipe": "Wischen: Segment wechseln",
+    "zenHintDouble": "Doppel-Tipp: Zen-Modus verlassen"
   },
   "templates": {
     "title": "Cloud-Vorlagen",
