@@ -218,13 +218,13 @@ export default function Setup() {
                       value={segment.title}
                       onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
                       placeholder="Titel des Segments"
-                      className="bg-background w-52"
+                      className="bg-background w-full sm:w-52"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor={`duration-${segment.id}`}>{t('setup.duration')}</Label>
-                    <div className="flex items-center gap-2 flex-nowrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Input
                         id={`duration-${segment.id}`}
                         type="text"
