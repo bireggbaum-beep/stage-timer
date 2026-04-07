@@ -455,9 +455,9 @@ export default function Timer() {
 
         {/* Segment Carousel - Shows current segment centered with prev/next */}
         {/* Fixed height container to prevent layout shift when toggling carousel */}
-        <div className="mb-4 w-full max-w-5xl overflow-hidden relative h-[4.5rem]">
+        <div className="mb-4 w-full max-w-5xl overflow-x-auto relative h-[4.5rem]">
           {showSegmentList && (
-            <div className="flex items-center justify-center gap-4 py-2">
+            <div className="flex items-center justify-center gap-2 sm:gap-4 py-2 min-w-0">
               {/* Show up to 2 segments before and 2 after current */}
               {state.segments.slice(
                 Math.max(0, state.currentSegmentIndex - 2),
@@ -471,7 +471,7 @@ export default function Timer() {
                 return (
                   <div
                     key={actualIndex}
-                    className={`flex-shrink-0 flex flex-col items-center transition-all duration-500 ${
+                    className={`min-w-0 flex-shrink flex flex-col items-center transition-all duration-500 ${
                       isCurrent ? 'scale-100 opacity-100' : distance === 1 ? 'scale-90 opacity-70' : 'scale-75 opacity-40'
                     }`}
                     style={{
@@ -479,7 +479,7 @@ export default function Timer() {
                     }}
                   >
                     <div
-                      className={`px-3 py-1.5 rounded-lg transition-all text-sm ${
+                      className={`px-3 py-1.5 rounded-lg transition-all text-sm max-w-[8rem] sm:max-w-none truncate ${
                         isCurrent
                           ? 'bg-primary/20 border border-primary text-primary-foreground shadow-lg'
                           : isPast
