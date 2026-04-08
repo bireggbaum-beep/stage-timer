@@ -50,10 +50,7 @@
     "tooltipSmartCompensate": "Verbleibende Segmente proportional kürzen, um geplante Endzeit einzuhalten",
     "tooltipTicking": "Ticken-Sound ein-/ausschalten",
     "tooltipZen": "Zen-Modus (ablenkungsfreie Ansicht)",
-    "keyZ": "Z: Zen-Modus",
-    "zenHintTap": "Tippen: Start / Pause",
-    "zenHintSwipe": "Wischen: Segment wechseln",
-    "zenHintDouble": "Doppel-Tipp: Zen-Modus verlassen"
+    "keyZ": "Z: Zen-Modus"
   },
   "templates": {
     "title": "Cloud-Vorlagen",

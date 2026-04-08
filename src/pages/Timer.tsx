@@ -16,6 +16,7 @@ import {
   SkipForward,
   Hand,
   Eye,
+  X,
 } from 'lucide-react';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -54,8 +55,6 @@ export default function Timer() {
   const [zenMode, setZenMode] = useState(false);
   const zenAutoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTapRef = useRef<number>(0);
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
-  const prevProgressColorRef = useRef<string>('');
   const timelineRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<any>(null);
   const pauseStartTimeRef = useRef<number | null>(null);
@@ -208,7 +207,6 @@ export default function Timer() {
     }
   }, [state.isRunning, state.isPaused]);
 
-  // Start auto-zen timer when timer is running
   useEffect(() => {
     if (state.isRunning && !state.isPaused) {
       resetZenAutoTimer();
@@ -218,84 +216,35 @@ export default function Timer() {
     return () => { if (zenAutoTimerRef.current) clearTimeout(zenAutoTimerRef.current); };
   }, [state.isRunning, state.isPaused, resetZenAutoTimer]);
 
-  // Haptic feedback when progress color phase changes
-  const hapticProgress = getCurrentSegmentProgress();
-  const hapticSegment = state.segments[state.currentSegmentIndex];
-  const hapticIsOvertime = hapticSegment
-    ? (hapticSegment.durationSeconds || hapticSegment.durationMinutes * 60) - state.elapsedSeconds < 0
-    : false;
-  useEffect(() => {
-    const currentColor = hapticIsOvertime ? 'red' : hapticProgress >= 90 ? 'red' : hapticProgress >= 75 ? 'yellow' : 'green';
-    if (prevProgressColorRef.current && prevProgressColorRef.current !== currentColor && state.isRunning) {
-      if ('vibrate' in navigator) {
-        if (currentColor === 'red') {
-          navigator.vibrate([200, 100, 200]); // long pattern for red
-        } else if (currentColor === 'yellow') {
-          navigator.vibrate(150); // short for yellow
-        }
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
       }
+    } catch (err) {
+      console.error('Fullscreen error:', err);
+      setFullscreenAvailable(false);
     }
-    prevProgressColorRef.current = currentColor;
-  }, [hapticProgress, hapticIsOvertime, state.isRunning]);
-
-  // Zen Mode gesture handlers
-  const handleZenTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
   }, []);
 
-  const handleZenTouchEnd = useCallback((e: React.TouchEvent) => {
-    const touchStart = touchStartRef.current;
-    if (!touchStart) return;
-
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStart.x;
-    const dy = touch.clientY - touchStart.y;
-    const dt = Date.now() - touchStart.time;
-    const absDx = Math.abs(dx);
-    const absDy = Math.abs(dy);
-
-    touchStartRef.current = null;
-
-    // Swipe detection: horizontal swipe > 60px, mostly horizontal, within 500ms
-    if (absDx > 60 && absDx > absDy * 1.5 && dt < 500) {
-      if (dx > 0) {
-        nextSegment();
-      } else {
-        previousSegment();
-      }
-      resetZenAutoTimer();
+  // Zen Mode tap handler: single tap = pause/resume, double tap = fullscreen
+  const handleZenTap = useCallback(() => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Double tap → fullscreen
+      lastTapRef.current = 0;
+      toggleFullscreen();
       return;
     }
-
-    // Tap detection: minimal movement
-    if (absDx < 15 && absDy < 15) {
-      const now = Date.now();
-      // Double-tap detection (within 300ms)
-      if (now - lastTapRef.current < 300) {
-        setZenMode(false);
-        lastTapRef.current = 0;
-        return;
+    lastTapRef.current = now;
+    setTimeout(() => {
+      if (lastTapRef.current === now) {
+        handleStartPause();
       }
-      lastTapRef.current = now;
-
-      // Single tap: wait to rule out double-tap, then toggle play/pause
-      setTimeout(() => {
-        if (lastTapRef.current === now) {
-          handleStartPause();
-          resetZenAutoTimer();
-        }
-      }, 310);
-    }
-  }, [handleStartPause, nextSegment, previousSegment, resetZenAutoTimer]);
-
-  // Also exit zen mode on any interaction in normal view
-  const handleUserActivity = useCallback(() => {
-    if (zenMode) {
-      setZenMode(false);
-    }
-    resetZenAutoTimer();
-  }, [zenMode, resetZenAutoTimer]);
+    }, 310);
+  }, [handleStartPause]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -325,19 +274,6 @@ export default function Timer() {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [state.isRunning, state.isPaused, tickingEnabled]);
-
-  const toggleFullscreen = async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-      } else {
-        await document.exitFullscreen();
-      }
-    } catch (err) {
-      console.error('Fullscreen error:', err);
-      setFullscreenAvailable(false);
-    }
-  };
 
   // Check if fullscreen is available
   useEffect(() => {
@@ -452,87 +388,23 @@ export default function Timer() {
     return 'bg-[var(--timer-green)]';
   }
 
-  function getZenBackground(progress: number, overtime: boolean): string {
-    if (overtime) return 'var(--timer-red)';
-    if (progress >= 90) return 'var(--timer-red)';
-    if (progress >= 75) return 'var(--timer-yellow)';
-    return 'var(--timer-green)';
-  }
-
-  // --- Zen Mode Overlay ---
-  if (zenMode) {
-    const zenBg = getZenBackground(progress, isOvertime);
-    return (
-      <div
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center select-none transition-colors duration-700"
-        style={{ backgroundColor: zenBg }}
-        onTouchStart={handleZenTouchStart}
-        onTouchEnd={handleZenTouchEnd}
-        onMouseDown={() => {
-          // Double-click to exit on desktop
-          const now = Date.now();
-          if (now - lastTapRef.current < 300) {
-            setZenMode(false);
-            lastTapRef.current = 0;
-            return;
-          }
-          lastTapRef.current = now;
-          setTimeout(() => {
-            if (lastTapRef.current === now) {
-              handleStartPause();
-              resetZenAutoTimer();
-            }
-          }, 310);
-        }}
-      >
-        {/* Segment title */}
-        <div className="text-white/70 text-lg sm:text-2xl mb-4 font-medium tracking-wide">
-          {currentSegment.title}
-        </div>
-
-        {/* Giant timer */}
-        <div
-          className={`text-white font-bold tabular-nums text-[6rem] sm:text-[10rem] md:text-[14rem] leading-none ${
-            isOvertime ? 'animate-pulse' : ''
-          }`}
-        >
-          {isOvertime && '+'}
-          {formatTime(displaySeconds)}
-        </div>
-
-        {/* Subtle status */}
-        <div className="text-white/50 text-sm sm:text-base mt-6">
-          {state.currentSegmentIndex + 1} / {state.segments.length}
-          {state.isPaused && state.isRunning && (
-            <span className="ml-3">{t('timer.paused')}</span>
-          )}
-        </div>
-
-        {/* Gesture hints - shown briefly */}
-        <div className="absolute bottom-6 text-white/30 text-xs sm:text-sm text-center space-y-1">
-          <div>{t('timer.zenHintTap')}</div>
-          <div>{t('timer.zenHintSwipe')}</div>
-          <div>{t('timer.zenHintDouble')}</div>
-        </div>
-
-        {/* Thin progress bar at bottom */}
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
-          <div
-            className="h-full bg-white/40 transition-all duration-300"
-            style={{ width: `${Math.min(progress, 100)}%` }}
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col" onMouseMove={handleUserActivity}>
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
+      {/* Zen Mode exit button */}
+      {zenMode && (
+        <button
+          onClick={() => setZenMode(false)}
+          className="fixed top-4 right-4 z-20 p-2 rounded-full bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground transition-all opacity-40 hover:opacity-100"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      )}
+
       {/* Sticky header: progress bars always visible even when content scrolls */}
       <div className="sticky top-0 z-10">
-      {/* Progress Bar - fixed gradient with shrinking overlay from left to right */}
+      {/* Progress Bar - grows in zen mode */}
       <div
-        className="w-full h-6 relative overflow-hidden"
+        className={`w-full relative overflow-hidden transition-all duration-700 ${zenMode ? 'h-3' : 'h-6'}`}
         style={{
           background: 'linear-gradient(to right, var(--timer-green) 0%, var(--timer-green) 75%, var(--timer-yellow) 75%, var(--timer-yellow) 90%, var(--timer-red) 90%, var(--timer-red) 100%)'
         }}
@@ -543,8 +415,8 @@ export default function Timer() {
         />
       </div>
 
-      {/* Session Overview Bar - segmented visualization */}
-      <div className="w-full h-2 bg-muted/30 flex">
+      {/* Session Overview Bar - segmented visualization, grows in zen mode */}
+      <div className={`w-full bg-muted/30 flex transition-all duration-700 ${zenMode ? 'h-4' : 'h-2'}`}>
         {state.segments.map((segment, index) => {
           const segmentDuration = segment.durationSeconds || (segment.durationMinutes * 60);
           const totalDuration = state.segments.reduce((sum, s) => sum + (s.durationSeconds || (s.durationMinutes * 60)), 0);
@@ -595,8 +467,11 @@ export default function Timer() {
       </div>
       </div>{/* end sticky header */}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
+      {/* Main Content - tappable in zen mode */}
+      <div
+        className={`flex-1 flex flex-col items-center justify-center p-4 md:p-8 ${zenMode ? 'cursor-pointer select-none' : ''}`}
+        onClick={zenMode ? handleZenTap : undefined}
+      >
         {/* Segment Title */}
         <div className="text-center mb-4">
           <div className="text-sm text-muted-foreground mb-2">
@@ -633,6 +508,8 @@ export default function Timer() {
           </div>
         </div>
 
+        {/* Everything below hidden in zen mode */}
+        {!zenMode && <>
         {/* Segment Carousel - Shows current segment centered with prev/next */}
         {/* Fixed height container to prevent layout shift when toggling carousel */}
         <div className="mb-4 w-full max-w-5xl overflow-x-auto relative h-[4.5rem]">
@@ -871,7 +748,7 @@ export default function Timer() {
           )}
         </div>
 
-        {/* Keyboard Shortcuts Hint - Always visible, even in fullscreen */}
+        {/* Keyboard Shortcuts Hint */}
         <div className="mt-4 text-center text-xs text-muted-foreground/60">
           <div className="mb-1 font-semibold">{t('timer.keyboardShortcuts')}</div>
           <div className="space-y-0.5">
@@ -881,6 +758,7 @@ export default function Timer() {
             <div>{t('timer.keyZ')}</div>
           </div>
         </div>
+        </>}
       </div>
 
     </div>

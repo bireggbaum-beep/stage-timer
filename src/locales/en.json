@@ -50,10 +50,7 @@
     "tooltipSmartCompensate": "Proportionally shorten remaining segments to meet planned end time",
     "tooltipTicking": "Toggle ticking sound",
     "tooltipZen": "Zen Mode (distraction-free view)",
-    "keyZ": "Z: Zen Mode",
-    "zenHintTap": "Tap: Start / Pause",
-    "zenHintSwipe": "Swipe: Switch segment",
-    "zenHintDouble": "Double-tap: Exit Zen Mode"
+    "keyZ": "Z: Zen Mode"
   },
   "templates": {
     "title": "Cloud Templates",
