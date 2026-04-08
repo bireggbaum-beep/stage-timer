@@ -54,7 +54,6 @@ export default function Timer() {
   });
   const [zenMode, setZenMode] = useState(false);
   const zenAutoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastTapRef = useRef<number>(0);
   const timelineRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<any>(null);
   const pauseStartTimeRef = useRef<number | null>(null);
@@ -228,23 +227,6 @@ export default function Timer() {
       setFullscreenAvailable(false);
     }
   }, []);
-
-  // Zen Mode tap handler: single tap = pause/resume, double tap = fullscreen
-  const handleZenTap = useCallback(() => {
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) {
-      // Double tap → fullscreen
-      lastTapRef.current = 0;
-      toggleFullscreen();
-      return;
-    }
-    lastTapRef.current = now;
-    setTimeout(() => {
-      if (lastTapRef.current === now) {
-        handleStartPause();
-      }
-    }, 310);
-  }, [handleStartPause]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -467,11 +449,22 @@ export default function Timer() {
       </div>
       </div>{/* end sticky header */}
 
-      {/* Main Content - tappable in zen mode */}
-      <div
-        className={`flex-1 flex flex-col items-center justify-center p-4 md:p-8 ${zenMode ? 'cursor-pointer select-none' : ''}`}
-        onClick={zenMode ? handleZenTap : undefined}
-      >
+      {/* Hidden segment navigation zones - left and right edges */}
+      <button
+        onClick={() => previousSegment()}
+        disabled={state.currentSegmentIndex === 0}
+        className="fixed left-0 top-0 bottom-0 w-16 z-10 opacity-0 cursor-pointer disabled:cursor-default"
+        aria-label={t('timer.tooltipPrevious')}
+      />
+      <button
+        onClick={() => nextSegment()}
+        disabled={state.currentSegmentIndex === state.segments.length - 1}
+        className="fixed right-0 top-0 bottom-0 w-16 z-10 opacity-0 cursor-pointer disabled:cursor-default"
+        aria-label={t('timer.tooltipNext')}
+      />
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8">
         {/* Segment Title */}
         <div className="text-center mb-4">
           <div className="text-sm text-muted-foreground mb-2">
@@ -480,12 +473,13 @@ export default function Timer() {
           <h1 className="text-4xl md:text-6xl font-bold">{currentSegment.title}</h1>
         </div>
 
-        {/* Main Timer Display */}
+        {/* Main Timer Display - tap to pause/resume */}
         <div className="mb-3">
           <div
-            className={`text-8xl md:text-[12rem] font-bold tabular-nums transition-colors ${
+            className={`text-8xl md:text-[12rem] font-bold tabular-nums transition-colors cursor-pointer select-none ${
               isOvertime ? 'text-[var(--timer-red)] animate-pulse' : ''
             }`}
+            onClick={handleStartPause}
           >
             {isOvertime && '+'}
             {formatTime(displaySeconds)}
