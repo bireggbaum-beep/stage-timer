@@ -53,6 +53,10 @@ export default function Timer() {
     return stored === null ? true : stored === 'true';
   });
   const [zenMode, setZenMode] = useState(false);
+  const autoZenEnabled = (() => {
+    const stored = localStorage.getItem('autoZenEnabled');
+    return stored === null ? true : stored === 'true';
+  })();
   const zenAutoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
   const wakeLockRef = useRef<any>(null);
@@ -201,10 +205,10 @@ export default function Timer() {
   // --- Zen Mode: auto-activate after 5s of inactivity while running ---
   const resetZenAutoTimer = useCallback(() => {
     if (zenAutoTimerRef.current) clearTimeout(zenAutoTimerRef.current);
-    if (state.isRunning && !state.isPaused) {
+    if (autoZenEnabled && state.isRunning && !state.isPaused) {
       zenAutoTimerRef.current = setTimeout(() => setZenMode(true), 5000);
     }
-  }, [state.isRunning, state.isPaused]);
+  }, [autoZenEnabled, state.isRunning, state.isPaused]);
 
   useEffect(() => {
     if (state.isRunning && !state.isPaused) {

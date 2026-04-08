@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+// Select removed - language is now a toggle button
 import { Card } from '@/components/ui/card';
-import { X, Plus, Play, Volume2, VolumeX, GripVertical, SkipForward, Hand } from 'lucide-react';
+import { X, Plus, Play, Volume2, VolumeX, GripVertical, SkipForward, Hand, Eye, Globe } from 'lucide-react';
 import TemplateManager from '@/components/TemplateManager';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -20,11 +20,21 @@ export default function Setup() {
     const stored = localStorage.getItem('tickingEnabled_v2');
     return stored === null ? true : stored === 'true';
   });
+  const [autoZenEnabled, setAutoZenEnabled] = useState<boolean>(() => {
+    const stored = localStorage.getItem('autoZenEnabled');
+    return stored === null ? true : stored === 'true';
+  });
 
   const toggleTicking = () => {
     const next = !tickingEnabled;
     setTickingEnabled(next);
     localStorage.setItem('tickingEnabled_v2', String(next));
+  };
+
+  const toggleAutoZen = () => {
+    const next = !autoZenEnabled;
+    setAutoZenEnabled(next);
+    localStorage.setItem('autoZenEnabled', String(next));
   };
   const [segments, setLocalSegments] = useState<Segment[]>(() => {
     const saved = localStorage.getItem('timerSegments');
@@ -145,32 +155,35 @@ export default function Setup() {
   return (
     <div className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">{t('setup.title')}</h1>
-            <p className="text-muted-foreground">
-              {t('setup.subtitle')}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant={tickingEnabled ? 'default' : 'outline'}
-              size="sm"
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-1">{t('setup.title')}</h1>
+          <p className="text-muted-foreground text-sm mb-3">
+            {t('setup.subtitle')}
+          </p>
+          {/* Compact settings row */}
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <button
               onClick={toggleTicking}
               title={t('setup.tickingSound')}
+              className={`p-2 rounded-md transition-colors ${tickingEnabled ? 'text-foreground bg-muted' : 'hover:text-foreground hover:bg-muted/50'}`}
             >
               {tickingEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </Button>
-            <Label className="text-sm text-muted-foreground">{t('setup.language')}:</Label>
-            <Select value={language} onValueChange={(value) => setLanguage(value as 'de' | 'en')}>
-              <SelectTrigger className="w-24 bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="de">DE</SelectItem>
-                <SelectItem value="en">EN</SelectItem>
-              </SelectContent>
-            </Select>
+            </button>
+            <button
+              onClick={toggleAutoZen}
+              title={t('setup.autoZen')}
+              className={`p-2 rounded-md transition-colors ${autoZenEnabled ? 'text-foreground bg-muted' : 'hover:text-foreground hover:bg-muted/50'}`}
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+            <div className="w-px h-4 bg-border mx-1" />
+            <button
+              onClick={() => setLanguage(language === 'de' ? 'en' : 'de')}
+              title={t('setup.language')}
+              className="p-2 rounded-md hover:text-foreground hover:bg-muted/50 transition-colors text-xs font-semibold w-8 text-center"
+            >
+              {language.toUpperCase()}
+            </button>
           </div>
         </div>
 

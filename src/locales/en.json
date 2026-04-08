@@ -17,7 +17,8 @@
     "hintAuto": "The segment automatically switches to the next one after completion",
     "hintManual": "The segment shows overtime (+MM:SS) after completion and waits for manual switch",
     "language": "Language",
-    "tickingSound": "Toggle ticking sound"
+    "tickingSound": "Toggle ticking sound",
+    "autoZen": "Auto-Zen: Automatically enter Zen Mode"
   },
   "timer": {
     "noSegments": "No segments configured",

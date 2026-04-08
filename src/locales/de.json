@@ -17,7 +17,8 @@
     "hintAuto": "Das Segment wechselt nach Ablauf automatisch zum nächsten",
     "hintManual": "Das Segment zeigt nach Ablauf die Überziehungszeit (+MM:SS) an und wartet auf manuellen Wechsel",
     "language": "Sprache",
-    "tickingSound": "Ticken-Sound ein-/ausschalten"
+    "tickingSound": "Ticken-Sound ein-/ausschalten",
+    "autoZen": "Auto-Zen: Automatisch in den Zen-Modus wechseln"
   },
   "timer": {
     "noSegments": "Keine Segmente konfiguriert",
