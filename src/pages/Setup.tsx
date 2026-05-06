@@ -127,16 +127,22 @@ export default function Setup() {
     const touch = e.touches[0];
     setTouchDragY(touch.clientY - touchStartY.current);
     const elements = segmentListRef.current.querySelectorAll('[data-segment-index]');
+    let closestIdx: number | null = null;
+    let closestDist = Infinity;
     for (const el of elements) {
+      const idx = parseInt(el.getAttribute('data-segment-index')!);
+      if (idx === dragIndex.current) continue;
       const rect = el.getBoundingClientRect();
-      if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-        const idx = parseInt(el.getAttribute('data-segment-index')!);
-        if (idx !== touchCurrentIndex.current) {
-          touchCurrentIndex.current = idx;
-          setDragOverIndex(idx);
-        }
-        break;
+      const center = (rect.top + rect.bottom) / 2;
+      const dist = Math.abs(touch.clientY - center);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestIdx = idx;
       }
+    }
+    if (closestIdx !== null && closestIdx !== touchCurrentIndex.current) {
+      touchCurrentIndex.current = closestIdx;
+      setDragOverIndex(closestIdx);
     }
   };
 
