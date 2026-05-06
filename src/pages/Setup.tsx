@@ -195,20 +195,20 @@ export default function Setup() {
               <div
                 key={segment.id}
                 data-segment-index={index}
-                draggable
-                onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
                 className={`flex gap-3 p-4 rounded-lg bg-muted/30 border-2 transition-colors ${
                   dragOverIndex === index ? 'border-primary' : 'border-border'
                 }`}
               >
-                {/* Drag handle */}
+                {/* Drag handle - only this is draggable */}
                 <div
-                  className="hidden md:flex items-center shrink-0 touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnd={handleDragEnd}
                   onTouchStart={(e) => handleTouchStart(index, e)}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
+                  className="flex items-center shrink-0 touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
                 >
                   <GripVertical className="h-5 w-5" />
                 </div>
