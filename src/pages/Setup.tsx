@@ -89,6 +89,11 @@ export default function Setup() {
   const handleDragStart = (e: React.DragEvent, index: number) => {
     dragIndex.current = index;
     e.dataTransfer.effectAllowed = 'move';
+    // Make the browser's drag ghost semi-transparent
+    const el = (e.target as HTMLElement).closest('[data-segment-index]') as HTMLElement;
+    if (el) {
+      el.style.opacity = '0.4';
+    }
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -96,7 +101,12 @@ export default function Setup() {
     setDragOverIndex(index);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: React.DragEvent) => {
+    // Restore opacity
+    const el = (e.target as HTMLElement).closest('[data-segment-index]') as HTMLElement;
+    if (el) {
+      el.style.opacity = '';
+    }
     if (dragIndex.current !== null && dragOverIndex !== null) {
       reorder(dragIndex.current, dragOverIndex);
     }
@@ -190,8 +200,16 @@ export default function Setup() {
         <TemplateManager segments={segments} onLoadTemplate={setLocalSegments} />
 
         {/* Rundown List */}
-        <div ref={segmentListRef} className="mb-6 space-y-0">
-          {segments.map((segment, index) => (
+        <div ref={segmentListRef} className="mb-6">
+          {segments.map((segment, index) => {
+            const isDragging = dragIndex.current !== null;
+            const isDraggedItem = isDragging && dragIndex.current === index;
+            const isDropTarget = dragOverIndex === index && dragIndex.current !== index;
+            const dragDir = dragIndex.current !== null && dragOverIndex !== null
+              ? (dragIndex.current < dragOverIndex ? 'down' : 'up')
+              : null;
+
+            return (
             <div key={segment.id}>
               {/* Chain/stop indicator between segments */}
               {index > 0 && (
@@ -222,16 +240,26 @@ export default function Setup() {
                 data-segment-index={index}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onClick={() => setSelectedSegment(selectedSegment === segment.id ? null : segment.id)}
-                className={`rounded-lg border transition-all cursor-pointer ${
-                  dragOverIndex === index
-                    ? 'border-primary bg-primary/5'
+                className={`rounded-lg border transition-all duration-200 cursor-pointer relative ${
+                  isDraggedItem
+                    ? 'opacity-40 scale-95'
+                    : isDropTarget
+                    ? 'border-primary bg-primary/10 ' + (dragDir === 'down' ? 'translate-y-[-4px]' : 'translate-y-[4px]')
                     : selectedSegment === segment.id
                     ? 'border-primary bg-primary/10'
                     : 'border-border bg-card hover:bg-card/80'
                 }`}
+                style={{
+                  transition: 'transform 200ms ease, opacity 200ms ease, background-color 200ms ease, border-color 200ms ease',
+                }}
               >
+                {/* Drop indicator line */}
+                {isDropTarget && dragDir === 'up' && (
+                  <div className="absolute -top-1 left-4 right-4 h-0.5 bg-primary rounded-full" />
+                )}
+
                 {/* Main row: handle | number | duration | title | delete */}
-                <div className="flex items-center gap-2 sm:gap-3 p-3">
+                <div className="flex items-center gap-3 px-3 py-4">
                   {/* Drag handle */}
                   <div
                     draggable
@@ -241,7 +269,7 @@ export default function Setup() {
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                     onClick={(e) => e.stopPropagation()}
-                    className="shrink-0 touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                    className="shrink-0 touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-1 -m-1"
                   >
                     <GripVertical className="h-5 w-5" />
                   </div>
@@ -249,8 +277,8 @@ export default function Setup() {
                   {/* Segment number */}
                   <span className="text-sm text-muted-foreground/50 w-5 shrink-0 text-center">{index + 1}</span>
 
-                  {/* Duration - big, bold, tappable */}
-                  <span className="text-lg font-bold font-mono tabular-nums shrink-0 w-14 text-center">
+                  {/* Duration - big, bold */}
+                  <span className="text-xl font-bold font-mono tabular-nums shrink-0 w-16 text-center">
                     {segment.durationMinutes}:00
                   </span>
 
@@ -260,14 +288,14 @@ export default function Setup() {
                     onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     placeholder={language === 'de' ? 'Titel...' : 'Title...'}
-                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 rounded px-1.5 py-0.5 -mx-1 transition-colors"
+                    className="flex-1 min-w-0 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground/40 focus:bg-muted/30 rounded px-2 py-1 transition-colors"
                   />
 
                   {/* Delete */}
                   <button
                     onClick={(e) => { e.stopPropagation(); removeSegment(segment.id); }}
                     disabled={segments.length === 1}
-                    className="shrink-0 p-1.5 text-muted-foreground/30 hover:text-destructive disabled:opacity-20 transition-colors rounded"
+                    className="shrink-0 p-2 text-muted-foreground/30 hover:text-destructive disabled:opacity-20 transition-colors rounded"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -276,21 +304,20 @@ export default function Setup() {
                 {/* Expanded section - duration controls */}
                 {selectedSegment === segment.id && (
                   <div
-                    className="px-3 pb-3 pt-0 flex flex-wrap items-center gap-2 border-t border-border/50"
+                    className="px-4 pb-4 pt-2 border-t border-border/50 space-y-3"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <span className="text-xs text-muted-foreground mr-1">{t('setup.duration')}</span>
-                    {/* +/- controls */}
-                    <div className="flex items-center gap-0.5">
+                    {/* +/- controls row */}
+                    <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => updateSegment(segment.id, 'durationMinutes', Math.max(1, segment.durationMinutes - 5))}
-                        className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded bg-muted/30 hover:bg-muted/60"
+                        className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded bg-muted/30 hover:bg-muted/60"
                       >
                         -5
                       </button>
                       <button
                         onClick={() => updateSegment(segment.id, 'durationMinutes', Math.max(1, segment.durationMinutes - 1))}
-                        className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded bg-muted/30 hover:bg-muted/60"
+                        className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded bg-muted/30 hover:bg-muted/60"
                       >
                         -1
                       </button>
@@ -307,49 +334,55 @@ export default function Setup() {
                             updateSegment(segment.id, 'durationMinutes', 1);
                           }
                         }}
-                        className="w-12 text-center bg-muted/40 rounded text-sm font-mono font-bold tabular-nums text-foreground border-none outline-none focus:bg-muted/60 transition-colors py-1"
+                        className="w-14 text-center bg-muted/40 rounded text-lg font-mono font-bold tabular-nums text-foreground border-none outline-none focus:bg-muted/60 transition-colors py-1.5"
                       />
-                      <span className="text-xs text-muted-foreground">min</span>
+                      <span className="text-sm text-muted-foreground">min</span>
                       <button
                         onClick={() => updateSegment(segment.id, 'durationMinutes', segment.durationMinutes + 1)}
-                        className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded bg-muted/30 hover:bg-muted/60"
+                        className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded bg-muted/30 hover:bg-muted/60"
                       >
                         +1
                       </button>
                       <button
                         onClick={() => updateSegment(segment.id, 'durationMinutes', segment.durationMinutes + 5)}
-                        className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded bg-muted/30 hover:bg-muted/60"
+                        className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded bg-muted/30 hover:bg-muted/60"
                       >
                         +5
                       </button>
                     </div>
 
-                    {/* Quick presets */}
-                    <div className="flex items-center gap-1 ml-auto">
-                      {[5, 10, 15, 20, 30, 45].map((min) => (
+                    {/* Quick presets - centered */}
+                    <div className="flex items-center justify-center gap-1.5">
+                      {[5, 10, 15, 20, 30, 45, 60].map((min) => (
                         <button
                           key={min}
                           onClick={() => updateSegment(segment.id, 'durationMinutes', min)}
-                          className={`px-2 py-1 rounded text-xs transition-colors ${
+                          className={`px-2.5 py-1.5 rounded text-xs transition-colors ${
                             segment.durationMinutes === min
                               ? 'bg-primary/20 text-primary font-semibold'
-                              : 'text-muted-foreground/60 hover:text-foreground bg-muted/20 hover:bg-muted/50'
+                              : 'text-muted-foreground hover:text-foreground bg-muted/20 hover:bg-muted/50'
                           }`}
                         >
-                          {min}
+                          {min}m
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
+
+                {/* Drop indicator line */}
+                {isDropTarget && dragDir === 'down' && (
+                  <div className="absolute -bottom-1 left-4 right-4 h-0.5 bg-primary rounded-full" />
+                )}
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {/* Add segment button */}
           <button
             onClick={addSegment}
-            className="w-full mt-3 py-2.5 border border-dashed border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex items-center justify-center gap-2"
+            className="w-full mt-3 py-3 border border-dashed border-border rounded-lg text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors flex items-center justify-center gap-2"
           >
             <Plus className="h-4 w-4" />
             {t('setup.addSegment')}
