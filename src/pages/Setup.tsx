@@ -7,7 +7,7 @@ import { X, Plus, Play, Volume2, VolumeX, GripVertical, Hand, Eye, Link } from '
 import TemplateManager from '@/components/TemplateManager';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Segment, SegmentMode } from '@/types/timer';
+import { Segment, SegmentMode, SEGMENT_COLORS } from '@/types/timer';
 import { useLocation } from 'wouter';
 
 export default function Setup() {
@@ -50,9 +50,9 @@ export default function Setup() {
 
   function getDefaultSegments(): Segment[] {
     return [
-      { id: crypto.randomUUID(), title: language === 'de' ? 'Einleitung' : 'Introduction', durationMinutes: 5, mode: 'auto' },
-      { id: crypto.randomUUID(), title: language === 'de' ? 'Hauptteil' : 'Main Part', durationMinutes: 40, mode: 'auto' },
-      { id: crypto.randomUUID(), title: 'Q&A', durationMinutes: 15, mode: 'manual' },
+      { id: crypto.randomUUID(), title: language === 'de' ? 'Einleitung' : 'Introduction', durationMinutes: 5, mode: 'auto', color: SEGMENT_COLORS[0] },
+      { id: crypto.randomUUID(), title: language === 'de' ? 'Hauptteil' : 'Main Part', durationMinutes: 40, mode: 'auto', color: SEGMENT_COLORS[1] },
+      { id: crypto.randomUUID(), title: 'Q&A', durationMinutes: 15, mode: 'manual', color: SEGMENT_COLORS[2] },
     ];
   }
 
@@ -61,9 +61,10 @@ export default function Setup() {
   }, [segments]);
 
   const addSegment = () => {
+    const nextColor = SEGMENT_COLORS[segments.length % SEGMENT_COLORS.length];
     setLocalSegments([
       ...segments,
-      { id: crypto.randomUUID(), title: language === 'de' ? 'Neues Segment' : 'New Segment', durationMinutes: 10, mode: 'auto' },
+      { id: crypto.randomUUID(), title: language === 'de' ? 'Neues Segment' : 'New Segment', durationMinutes: 10, mode: 'auto', color: nextColor },
     ]);
   };
 
@@ -289,8 +290,13 @@ export default function Setup() {
                     <GripVertical className="h-5 w-5" />
                   </div>
 
-                  {/* Segment number */}
-                  <span className="text-sm text-muted-foreground/50 w-5 shrink-0 text-center">{index + 1}</span>
+                  {/* Color dot + number */}
+                  <div className="shrink-0 w-5 flex items-center justify-center">
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: segment.color || SEGMENT_COLORS[index % SEGMENT_COLORS.length] }}
+                    />
+                  </div>
 
                   {/* Duration */}
                   <span className="text-xl font-bold font-mono tabular-nums shrink-0 w-16 text-center">
@@ -379,6 +385,20 @@ export default function Setup() {
                         </button>
                       ))}
                     </div>
+                    <div className="flex items-center justify-center gap-1.5">
+                      {SEGMENT_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => updateSegment(segment.id, 'color', color)}
+                          className={`w-5 h-5 rounded-full transition-transform ${
+                            (segment.color || SEGMENT_COLORS[index % SEGMENT_COLORS.length]) === color
+                              ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background scale-110'
+                              : 'hover:scale-125'
+                          }`}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -394,6 +414,34 @@ export default function Setup() {
             <Plus className="h-4 w-4" />
             {t('setup.addSegment')}
           </button>
+        </div>
+
+        {/* Timer Preview */}
+        <div className="mb-6 rounded-lg border border-border bg-card overflow-hidden">
+          <div className="flex h-3">
+            {segments.map((seg) => (
+              <div
+                key={seg.id}
+                className="h-full first:rounded-l-lg last:rounded-r-lg"
+                style={{
+                  width: `${(seg.durationMinutes / totalMinutes) * 100}%`,
+                  backgroundColor: seg.color || SEGMENT_COLORS[segments.indexOf(seg) % SEGMENT_COLORS.length],
+                  opacity: 0.8,
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex text-[10px] text-muted-foreground px-0.5 py-1">
+            {segments.map((seg) => (
+              <div
+                key={seg.id}
+                className="truncate text-center px-0.5"
+                style={{ width: `${(seg.durationMinutes / totalMinutes) * 100}%` }}
+              >
+                {seg.durationMinutes >= totalMinutes * 0.08 ? `${seg.durationMinutes}m` : ''}
+              </div>
+            ))}
+          </div>
         </div>
 
         <Card className="p-6 mb-6 bg-card text-card-foreground">

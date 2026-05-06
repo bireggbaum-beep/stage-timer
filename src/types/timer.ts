@@ -1,5 +1,11 @@
 export type SegmentMode = 'auto' | 'manual';
 
+export const SEGMENT_COLORS = [
+  '#7c3aed', '#3b82f6', '#06b6d4', '#22c55e', '#eab308', '#f97316', '#ef4444', '#ec4899', '#8b5cf6', '#6b7280',
+] as const;
+
+export type SegmentColor = string;
+
 export interface Segment {
   id: string;
   title: string;
@@ -7,6 +13,7 @@ export interface Segment {
   durationSeconds?: number; // Precise duration in seconds
   actualDurationSeconds?: number; // Actual duration during session
   mode: SegmentMode;
+  color?: SegmentColor;
 }
 
 export interface TimerState {
