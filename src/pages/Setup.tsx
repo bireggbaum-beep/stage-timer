@@ -77,6 +77,9 @@ export default function Setup() {
   const dragIndex = useRef<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const segmentListRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number>(0);
+  const [touchDragY, setTouchDragY] = useState<number | null>(null);
+  const [touchDragIndex, setTouchDragIndex] = useState<number | null>(null);
 
   const reorder = useCallback((fromIndex: number, toIndex: number) => {
     if (fromIndex === toIndex) return;
@@ -89,11 +92,8 @@ export default function Setup() {
   const handleDragStart = (e: React.DragEvent, index: number) => {
     dragIndex.current = index;
     e.dataTransfer.effectAllowed = 'move';
-    // Make the browser's drag ghost semi-transparent
     const el = (e.target as HTMLElement).closest('[data-segment-index]') as HTMLElement;
-    if (el) {
-      el.style.opacity = '0.4';
-    }
+    if (el) el.style.opacity = '0.4';
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -102,11 +102,8 @@ export default function Setup() {
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
-    // Restore opacity
     const el = (e.target as HTMLElement).closest('[data-segment-index]') as HTMLElement;
-    if (el) {
-      el.style.opacity = '';
-    }
+    if (el) el.style.opacity = '';
     if (dragIndex.current !== null && dragOverIndex !== null) {
       reorder(dragIndex.current, dragOverIndex);
     }
@@ -119,12 +116,16 @@ export default function Setup() {
   const handleTouchStart = (index: number, e: React.TouchEvent) => {
     dragIndex.current = index;
     touchCurrentIndex.current = index;
+    touchStartY.current = e.touches[0].clientY;
+    setTouchDragIndex(index);
+    setTouchDragY(0);
     e.preventDefault();
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (dragIndex.current === null || !segmentListRef.current) return;
     const touch = e.touches[0];
+    setTouchDragY(touch.clientY - touchStartY.current);
     const elements = segmentListRef.current.querySelectorAll('[data-segment-index]');
     for (const el of elements) {
       const rect = el.getBoundingClientRect();
@@ -146,6 +147,8 @@ export default function Setup() {
     dragIndex.current = null;
     touchCurrentIndex.current = null;
     setDragOverIndex(null);
+    setTouchDragY(null);
+    setTouchDragIndex(null);
   };
 
   const updateSegment = (id: string, field: keyof Segment, value: string | number | SegmentMode) => {
@@ -202,37 +205,52 @@ export default function Setup() {
         {/* Rundown List */}
         <div ref={segmentListRef} className="mb-6">
           {segments.map((segment, index) => {
-            const isDragging = dragIndex.current !== null;
-            const isDraggedItem = isDragging && dragIndex.current === index;
+            const isBeingTouchDragged = touchDragIndex === index && touchDragY !== null;
             const isDropTarget = dragOverIndex === index && dragIndex.current !== index;
-            const dragDir = dragIndex.current !== null && dragOverIndex !== null
-              ? (dragIndex.current < dragOverIndex ? 'down' : 'up')
-              : null;
 
             return (
-            <div key={segment.id}>
-              {/* Chain/stop indicator between segments */}
+            <div
+              key={segment.id}
+              className="relative"
+              style={isBeingTouchDragged ? {
+                transform: `translateY(${touchDragY}px)`,
+                zIndex: 50,
+                position: 'relative',
+              } : undefined}
+            >
+              {/* Mode connector between segments */}
               {index > 0 && (
-                <div className="flex items-center justify-center py-0.5 relative z-10">
-                  <button
-                    onClick={() => {
-                      const prevSegment = segments[index - 1];
-                      updateSegment(prevSegment.id, 'mode', prevSegment.mode === 'auto' ? 'manual' : 'auto');
-                    }}
-                    title={segments[index - 1].mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs transition-colors ${
-                      segments[index - 1].mode === 'auto'
-                        ? 'bg-primary/20 text-primary hover:bg-primary/30'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                  >
+                <button
+                  onClick={() => {
+                    const prevSegment = segments[index - 1];
+                    updateSegment(prevSegment.id, 'mode', prevSegment.mode === 'auto' ? 'manual' : 'auto');
+                  }}
+                  title={segments[index - 1].mode === 'auto' ? t('setup.modeAuto') : t('setup.modeManual')}
+                  className="w-full flex items-center gap-2 py-1 group"
+                >
+                  <div className={`flex-1 border-t ${
+                    segments[index - 1].mode === 'auto' ? 'border-primary/40' : 'border-dashed border-muted-foreground/30'
+                  }`} />
+                  <span className={`text-[10px] shrink-0 transition-colors ${
+                    segments[index - 1].mode === 'auto'
+                      ? 'text-primary/60 group-hover:text-primary'
+                      : 'text-muted-foreground/40 group-hover:text-muted-foreground'
+                  }`}>
                     {segments[index - 1].mode === 'auto' ? (
-                      <><Link className="h-3 w-3" /><span>{t('common.auto')}</span></>
+                      <><Link className="h-2.5 w-2.5 inline -mt-0.5" /></>
                     ) : (
-                      <><Hand className="h-3 w-3" /><span>{t('common.manual')}</span></>
+                      <><Hand className="h-2.5 w-2.5 inline -mt-0.5" /></>
                     )}
-                  </button>
-                </div>
+                  </span>
+                  <div className={`flex-1 border-t ${
+                    segments[index - 1].mode === 'auto' ? 'border-primary/40' : 'border-dashed border-muted-foreground/30'
+                  }`} />
+                </button>
+              )}
+
+              {/* Drop indicator */}
+              {isDropTarget && (
+                <div className="absolute left-0 right-0 top-0 h-0.5 bg-primary rounded-full z-20" />
               )}
 
               {/* Segment row */}
@@ -240,25 +258,16 @@ export default function Setup() {
                 data-segment-index={index}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onClick={() => setSelectedSegment(selectedSegment === segment.id ? null : segment.id)}
-                className={`rounded-lg border transition-all duration-200 cursor-pointer relative ${
-                  isDraggedItem
-                    ? 'opacity-40 scale-95'
-                    : isDropTarget
-                    ? 'border-primary bg-primary/10 ' + (dragDir === 'down' ? 'translate-y-[-4px]' : 'translate-y-[4px]')
+                className={`rounded-lg border cursor-pointer relative ${
+                  isBeingTouchDragged
+                    ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10'
                     : selectedSegment === segment.id
                     ? 'border-primary bg-primary/10'
                     : 'border-border bg-card hover:bg-card/80'
                 }`}
-                style={{
-                  transition: 'transform 200ms ease, opacity 200ms ease, background-color 200ms ease, border-color 200ms ease',
-                }}
+                style={{ transition: isBeingTouchDragged ? 'none' : 'background-color 200ms ease, border-color 200ms ease' }}
               >
-                {/* Drop indicator line */}
-                {isDropTarget && dragDir === 'up' && (
-                  <div className="absolute -top-1 left-4 right-4 h-0.5 bg-primary rounded-full" />
-                )}
-
-                {/* Main row: handle | number | duration | title | delete */}
+                {/* Main row */}
                 <div className="flex items-center gap-3 px-3 py-4">
                   {/* Drag handle */}
                   <div
@@ -277,12 +286,12 @@ export default function Setup() {
                   {/* Segment number */}
                   <span className="text-sm text-muted-foreground/50 w-5 shrink-0 text-center">{index + 1}</span>
 
-                  {/* Duration - big, bold */}
+                  {/* Duration */}
                   <span className="text-xl font-bold font-mono tabular-nums shrink-0 w-16 text-center">
                     {segment.durationMinutes}:00
                   </span>
 
-                  {/* Title - inline edit */}
+                  {/* Title */}
                   <input
                     value={segment.title}
                     onChange={(e) => updateSegment(segment.id, 'title', e.target.value)}
@@ -301,13 +310,12 @@ export default function Setup() {
                   </button>
                 </div>
 
-                {/* Expanded section - duration controls */}
+                {/* Expanded section */}
                 {selectedSegment === segment.id && (
                   <div
                     className="px-4 pb-4 pt-2 border-t border-border/50 space-y-3"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* +/- controls row */}
                     <div className="flex items-center justify-center gap-1">
                       <button
                         onClick={() => updateSegment(segment.id, 'durationMinutes', Math.max(1, segment.durationMinutes - 5))}
@@ -350,8 +358,6 @@ export default function Setup() {
                         +5
                       </button>
                     </div>
-
-                    {/* Quick presets - centered */}
                     <div className="flex items-center justify-center gap-1.5">
                       {[5, 10, 15, 20, 30, 45, 60].map((min) => (
                         <button
@@ -368,11 +374,6 @@ export default function Setup() {
                       ))}
                     </div>
                   </div>
-                )}
-
-                {/* Drop indicator line */}
-                {isDropTarget && dragDir === 'down' && (
-                  <div className="absolute -bottom-1 left-4 right-4 h-0.5 bg-primary rounded-full" />
                 )}
               </div>
             </div>
