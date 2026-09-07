@@ -51,7 +51,9 @@
     "tooltipSmartCompensate": "Proportionally shorten remaining segments to meet planned end time",
     "tooltipTicking": "Toggle ticking sound",
     "tooltipZen": "Zen Mode (distraction-free view)",
-    "keyZ": "Z: Zen Mode"
+    "keyZ": "Z: Zen Mode",
+    "tooltipWaitMode": "Pomodoro: stop at each segment end and wait for Start",
+    "awaitingContinue": "Ready – press Start to continue"
   },
   "templates": {
     "title": "Cloud Templates",

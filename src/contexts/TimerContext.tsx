@@ -20,6 +20,8 @@ interface TimerContextType {
   endSession: () => void;
   isLastSegment: () => boolean;
   toggleCurrentSegmentMode: () => void;
+  toggleWaitAtSegmentEnd: () => void;
+  continueAfterWait: () => void;
 }
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
@@ -53,6 +55,9 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       plannedEndTime: null,
       sessionCompleted: false,
       sessionStartTime: null,
+      waitAtSegmentEnd: false,
+      awaitingContinue: false,
+      boundarySignal: 0,
     };
   }
 
@@ -74,15 +79,32 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
           // Check if segment is complete
           if (newElapsed >= segmentDurationSeconds) {
+            const isLast = prev.currentSegmentIndex >= prev.segments.length - 1;
+
+            // Pomodoro "wait at end" mode: halt at every boundary and wait for the
+            // user to press Start. No overtime counter — just a clean stop + chime.
+            if (prev.waitAtSegmentEnd) {
+              return {
+                ...prev,
+                currentSegmentIndex: isLast ? prev.currentSegmentIndex : prev.currentSegmentIndex + 1,
+                elapsedSeconds: isLast ? segmentDurationSeconds : 0,
+                overtimeSeconds: 0,
+                isPaused: true,
+                awaitingContinue: true,
+                boundarySignal: (prev.boundarySignal ?? 0) + 1,
+              };
+            }
+
             // Auto mode: move to next segment
             if (currentSegment.mode === 'auto') {
-              if (prev.currentSegmentIndex < prev.segments.length - 1) {
+              if (!isLast) {
                 return {
                   ...prev,
                   currentSegmentIndex: prev.currentSegmentIndex + 1,
                   elapsedSeconds: 0,
                   overtimeSeconds: 0,
                   totalOvertimeSeconds: prev.totalOvertimeSeconds + prev.overtimeSeconds,
+                  boundarySignal: (prev.boundarySignal ?? 0) + 1,
                 };
               } else {
                 // Last segment finished - continue running to show overtime
@@ -179,6 +201,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       overtimeSeconds: 0,
       totalPauseSeconds: 0,
       totalOvertimeSeconds: 0,
+      awaitingContinue: false,
     }));
   }, []);
 
@@ -191,6 +214,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           elapsedSeconds: 0,
           overtimeSeconds: 0,
           totalOvertimeSeconds: prev.totalOvertimeSeconds + prev.overtimeSeconds,
+          awaitingContinue: false,
         };
       }
       return prev;
@@ -205,6 +229,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
           currentSegmentIndex: prev.currentSegmentIndex - 1,
           elapsedSeconds: 0,
           overtimeSeconds: 0,
+          awaitingContinue: false,
         };
       }
       return prev;
@@ -227,6 +252,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       isPaused: false,
       elapsedSeconds: 0,
       overtimeSeconds: 0,
+      awaitingContinue: false,
     }));
   }, []);
 
@@ -303,7 +329,21 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }, [state.currentSegmentIndex, state.segments.length]);
 
   const endSession = useCallback(() => {
-    setState(getInitialState());
+    // Reset everything but keep the user's Pomodoro preference across sessions.
+    setState((prev) => ({ ...getInitialState(), waitAtSegmentEnd: prev.waitAtSegmentEnd }));
+  }, []);
+
+  const toggleWaitAtSegmentEnd = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      waitAtSegmentEnd: !prev.waitAtSegmentEnd,
+      // Leaving the mode while waiting shouldn't strand the timer in the wait state.
+      awaitingContinue: prev.waitAtSegmentEnd ? false : prev.awaitingContinue,
+    }));
+  }, []);
+
+  const continueAfterWait = useCallback(() => {
+    setState((prev) => ({ ...prev, isPaused: false, awaitingContinue: false }));
   }, []);
 
   const toggleCurrentSegmentMode = useCallback(() => {
@@ -409,6 +449,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
         endSession,
         isLastSegment,
         toggleCurrentSegmentMode,
+        toggleWaitAtSegmentEnd,
+        continueAfterWait,
       }}
     >
       {children}

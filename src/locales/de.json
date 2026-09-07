@@ -51,7 +51,9 @@
     "tooltipSmartCompensate": "Verbleibende Segmente proportional kürzen, um geplante Endzeit einzuhalten",
     "tooltipTicking": "Ticken-Sound ein-/ausschalten",
     "tooltipZen": "Zen-Modus (ablenkungsfreie Ansicht)",
-    "keyZ": "Z: Zen-Modus"
+    "keyZ": "Z: Zen-Modus",
+    "tooltipWaitMode": "Pomodoro: Am Segment-Ende anhalten und auf Start warten",
+    "awaitingContinue": "Bereit – mit Start weiter"
   },
   "templates": {
     "title": "Cloud-Vorlagen",
