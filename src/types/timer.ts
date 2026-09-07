@@ -29,6 +29,9 @@ export interface TimerState {
   plannedEndTime: string | null; // HH:MM format
   sessionCompleted: boolean;
   sessionStartTime: Date | null;
+  waitAtSegmentEnd: boolean; // Pomodoro: halt at every segment boundary and wait for the user
+  awaitingContinue: boolean; // true while stopped at a boundary, waiting for "Start"
+  boundarySignal: number; // increments on each natural segment completion (drives the transition chime)
 }
 
 export interface AirtableTemplate {

@@ -17,6 +17,7 @@ import {
   Hand,
   Eye,
   X,
+  Coffee,
 } from 'lucide-react';
 import { useTimer } from '@/contexts/TimerContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -40,6 +41,8 @@ export default function Timer() {
     endSession,
     isLastSegment,
     toggleCurrentSegmentMode,
+    toggleWaitAtSegmentEnd,
+    continueAfterWait,
   } = useTimer();
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
@@ -67,6 +70,7 @@ export default function Timer() {
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const playbackOffsetRef = useRef(0);
   const playbackStartRef = useRef(0);
+  const prevBoundaryRef = useRef<number>(state.boundarySignal ?? 0);
 
   const playAudio = () => {
     const ctx = audioCtxRef.current;
@@ -99,6 +103,29 @@ export default function Timer() {
     sourceRef.current = null;
   };
 
+  // Short two-note bell, synthesized on the fly — no asset needed, works offline.
+  const playChime = () => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+    const tone = (freq: number, delay: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + delay);
+      gain.gain.linearRampToValueAtTime(0.35, now + delay + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + delay);
+      osc.stop(now + delay + duration);
+    };
+    tone(880, 0, 0.55);    // A5
+    tone(1318.5, 0.13, 0.6); // E6
+  };
+
   const toggleTicking = () => {
     const next = !tickingEnabled;
     setTickingEnabled(next);
@@ -111,7 +138,11 @@ export default function Timer() {
   };
 
   const handleStartPause = () => {
-    if (!state.isRunning) {
+    if (state.awaitingContinue) {
+      // Waiting at a segment boundary (Pomodoro mode) → continue with the next block
+      continueAfterWait();
+      if (tickingEnabled) playAudio();
+    } else if (!state.isRunning) {
       // Stopped → Start
       startTimer();
       if (tickingEnabled) playAudio();
@@ -151,6 +182,15 @@ export default function Timer() {
     }
   }, [tickingEnabled, state.isRunning, state.isPaused]);
 
+  // Transition chime: ring a bell every time a segment completes naturally.
+  useEffect(() => {
+    const signal = state.boundarySignal ?? 0;
+    if (signal !== prevBoundaryRef.current) {
+      prevBoundaryRef.current = signal;
+      playChime();
+    }
+  }, [state.boundarySignal]);
+
   // Update current time every second
   useEffect(() => {
     const interval = setInterval(() => {
@@ -159,9 +199,10 @@ export default function Timer() {
     return () => clearInterval(interval);
   }, []);
 
-  // Track pause duration (cumulative)
+  // Track pause duration (cumulative). A boundary wait (Pomodoro) is not a user
+  // pause, so it must not inflate the delay counters.
   useEffect(() => {
-    if (state.isPaused && state.isRunning) {
+    if (state.isPaused && state.isRunning && !state.awaitingContinue) {
       // Start tracking pause time
       if (!pauseStartTimeRef.current) {
         pauseStartTimeRef.current = Date.now();
@@ -184,7 +225,7 @@ export default function Timer() {
       pauseStartTimeRef.current = null;
       setPauseDuration(0);
     }
-  }, [state.isPaused, state.isRunning]);
+  }, [state.isPaused, state.isRunning, state.awaitingContinue]);
 
   // Auto-scroll timeline to center current segment
   useEffect(() => {
@@ -490,10 +531,15 @@ export default function Timer() {
           </div>
           {/* Fixed height container to prevent vertical jumping */}
           <div className="min-h-[2rem] flex items-center justify-center mt-2">
-            {isOvertime && (
+            {state.awaitingContinue && (
+              <div className="text-center text-base text-primary animate-pulse">
+                {t('timer.awaitingContinue')}
+              </div>
+            )}
+            {isOvertime && !state.awaitingContinue && (
               <div className="text-center text-base text-[var(--timer-red)]">{t('timer.overtime')}</div>
             )}
-            {state.isPaused && state.isRunning && (
+            {state.isPaused && state.isRunning && !state.awaitingContinue && (
               <div className="text-center text-base text-[var(--timer-red)]">
                 {t('timer.paused')} +{formatTime(state.totalPauseSeconds + pauseDuration)}
               </div>
@@ -697,6 +743,15 @@ export default function Timer() {
             title={t('timer.tooltipTicking')}
           >
             {tickingEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+          </Button>
+
+          <Button
+            onClick={toggleWaitAtSegmentEnd}
+            size="lg"
+            variant={state.waitAtSegmentEnd ? 'default' : 'outline'}
+            title={t('timer.tooltipWaitMode')}
+          >
+            <Coffee className="h-5 w-5" />
           </Button>
 
           <Button onClick={() => setShowSegmentList(!showSegmentList)} size="lg" variant="outline" title={t('timer.tooltipList')}>
